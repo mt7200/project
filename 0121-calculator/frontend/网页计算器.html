@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简单计算器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .calculator {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        .input-group input,
+        .input-group select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+        }
+        .input-row .input-group {
+            flex: 1;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .error {
+            color: red;
+            font-size: 30px;
+        }
+        .loading {
+            color: #666;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <h1>简单计算器</h1>
+        <div class="input-row">
+            <div class="input-group">
+                <label for="num1">第一个数字：</label>
+                <input type="text" id="num1" placeholder="请输入数字">
+            </div>
+            <div class="input-group">
+                <label for="operator">运算符：</label>
+                <select id="operator">
+                    <option value="add">+</option>
+                    <option value="subtract">-</option>
+                    <option value="multiply">*</option>
+                    <option value="divide">/</option>
+                    <option value="modulus">%</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label for="num2">第二个数字：</label>
+                <input type="text" id="num2" placeholder="请输入数字">
+            </div>
+        </div>
+        <button onclick="calculate()">计算</button>
+        <div id="result">
+            结果将显示在这里
+        </div>
+    </div>
+    <script>
+        async function calculate() {
+            const num1 = document.getElementById('num1').value;
+            const num2 = document.getElementById('num2').value;
+            const operator = document.getElementById('operator').value;
+            const resultDiv = document.getElementById('result');
+            
+            // 基本前端验证
+            if (num1 === '' || num2 === '') {
+                resultDiv.innerHTML = '<span class="error">请输入两个数字</span>';
+                return;
+            }
+            
+            if (isNaN(num1) || isNaN(num2)) {
+                resultDiv.innerHTML = '<span class="error">请输入有效的数字</span>';
+                return;
+            }
+            
+            // 转换为数字
+            const number1 = parseFloat(num1);
+            const number2 = parseFloat(num2);
+            
+            // 显示加载状态
+            resultDiv.innerHTML = '<span class="loading">计算中...</span>';
+            
+            try {
+                // 调用后端API
+                const response = await fetch('http://127.0.0.1:5000/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        num1: number1,
+                        num2: number2,
+                        operation: operator
+                    })
+                });
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 显示结果或错误
+                if (data.error) {
+                    resultDiv.innerHTML = `<span class="error">${data.error}</span>`;
+                } else {
+                    resultDiv.innerHTML = `结果：${data.result}`;
+                }
+                
+            } catch (error) {
+                console.error('请求失败:', error);
+                resultDiv.innerHTML = `<span class="error">连接失败: ${error.message}</span>`;
+            }
+        }
+        
+        // 添加回车键支持
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                calculate();
+            }
+        });
+    </script>
+</body>
+</html>
