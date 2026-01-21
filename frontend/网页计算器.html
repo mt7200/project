@@ -70,6 +70,10 @@
             color: red;
             font-size: 30px;
         }
+        .loading {
+            color: #666;
+            font-size: 16px;
+        }
     </style>
 </head>
 <body>
@@ -83,11 +87,11 @@
             <div class="input-group">
                 <label for="operator">运算符：</label>
                 <select id="operator">
-                    <option value="+">+</option>
-                    <option value="-">-</option>
-                    <option value="*">*</option>
-                    <option value="/">/</option>
-                    <option value="%">%</option>
+                    <option value="add">+</option>
+                    <option value="subtract">-</option>
+                    <option value="multiply">*</option>
+                    <option value="divide">/</option>
+                    <option value="modulus">%</option>
                 </select>
             </div>
             <div class="input-group">
@@ -101,43 +105,70 @@
         </div>
     </div>
     <script>
-        function calculate() {
-            var num1 = document.getElementById('num1').value;
-            var num2 = document.getElementById('num2').value;
-            var operator = document.getElementById('operator').value;
-            var resultDiv = document.getElementById('result');
+        async function calculate() {
+            const num1 = document.getElementById('num1').value;
+            const num2 = document.getElementById('num2').value;
+            const operator = document.getElementById('operator').value;
+            const resultDiv = document.getElementById('result');
+            
+            // 基本前端验证
             if (num1 === '' || num2 === '') {
                 resultDiv.innerHTML = '<span class="error">请输入两个数字</span>';
                 return;
             }
+            
             if (isNaN(num1) || isNaN(num2)) {
                 resultDiv.innerHTML = '<span class="error">请输入有效的数字</span>';
                 return;
             }
-            var number1 = parseFloat(num1);
-            var number2 = parseFloat(num2);
-            var result = 0;
-            if (operator === '+') {
-                result = number1 + number2;
-            } else if (operator === '-') {
-                result = number1 - number2;
-            } else if (operator === '*') {
-                result = number1 * number2;
-            } else if (operator === '/') {
-                if (number2 === 0) {
-                    resultDiv.innerHTML = '<span class="error">除数不能为0</span>';
-                    return;
+            
+            // 转换为数字
+            const number1 = parseFloat(num1);
+            const number2 = parseFloat(num2);
+            
+            // 显示加载状态
+            resultDiv.innerHTML = '<span class="loading">计算中...</span>';
+            
+            try {
+                // 调用后端API
+                const response = await fetch('http://127.0.0.1:5000/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        num1: number1,
+                        num2: number2,
+                        operation: operator
+                    })
+                });
+                
+                // 检查响应状态
+                if (!response.ok) {
+                    throw new Error(`HTTP错误: ${response.status}`);
                 }
-                result = number1 / number2;
-            } else if (operator === '%') {
-                if (number2 === 0) {
-                    resultDiv.innerHTML = '<span class="error">除数不能为0</span>';
-                    return;
+                
+                const data = await response.json();
+                
+                // 显示结果或错误
+                if (data.error) {
+                    resultDiv.innerHTML = `<span class="error">${data.error}</span>`;
+                } else {
+                    resultDiv.innerHTML = `结果：${data.result}`;
                 }
-                result = number1 % number2;
+                
+            } catch (error) {
+                console.error('请求失败:', error);
+                resultDiv.innerHTML = `<span class="error">连接失败: ${error.message}</span>`;
             }
-            resultDiv.innerHTML = '结果：' + result;
         }
+        
+        // 添加回车键支持
+        document.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                calculate();
+            }
+        });
     </script>
 </body>
 </html>
