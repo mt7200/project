@@ -1,12 +1,8 @@
-import { useState } from 'react'
-import { Outlet, NavLink, useLocation } from 'react-router-dom'
-import AISidebar from './AISidebar'
+import { Outlet, NavLink } from 'react-router-dom'
 import { workspaceMenus, recordMenus } from '../menus'
 import './Layout.css'
 
 export default function Layout() {
-  const location = useLocation()
-
   const categories = [
     { label: '诊疗工作台', menus: workspaceMenus, color: '#4A90D9' },
     { label: '病历管理', menus: recordMenus, color: '#52C41A' },
@@ -54,9 +50,6 @@ export default function Layout() {
           <div className="main-content">
             <Outlet />
           </div>
-          {!['/statistics', '/login', '/workspace'].includes(location.pathname) && (
-            <AISidebar />
-          )}
         </main>
       </div>
     </div>

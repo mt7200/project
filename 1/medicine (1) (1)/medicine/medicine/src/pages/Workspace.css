@@ -756,6 +756,80 @@
   background: var(--text-muted);
 }
 
+/* Patient sidebar */
+.ws-patient-bar .ws-card {
+  flex: none;
+}
+
+.ws-patient-item {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.ws-patient-item:last-child {
+  border-bottom: none;
+}
+
+.ws-patient-item:hover {
+  background: #F5F7FA;
+}
+
+.ws-patient-item.selected {
+  background: var(--primary-bg);
+}
+
+.ws-patient-item-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2px;
+}
+
+.ws-patient-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.ws-patient-gender {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.ws-patient-diagnosis {
+  font-size: 11px;
+  color: var(--text-secondary);
+  margin-bottom: 2px;
+}
+
+.ws-patient-status {
+  font-size: 10px;
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.ws-patient-bar .ws-field {
+  margin-bottom: 3px;
+}
+
+.ws-patient-bar .ws-field label {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.ws-patient-bar .ws-field span {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.ws-patient-bar .ws-card-head h3 {
+  font-size: 11px;
+}
+
 @media (max-width: 1100px) {
   .ws-body {
     flex-direction: column;

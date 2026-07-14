@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './PrescriptionFlow.css'
 
 interface Herb {
@@ -115,6 +116,7 @@ const prescriptions: Prescription[] = [
 ]
 
 export default function PrescriptionFlow() {
+  const navigate = useNavigate()
   // Prescription state
   const [selectedPatient, setSelectedPatient] = useState<number | null>(null)
   const [selectedFormula, setSelectedFormula] = useState('')
@@ -370,7 +372,7 @@ export default function PrescriptionFlow() {
                       <div className="pf-review-actions">
                         <button className="btn btn-ghost btn-sm">退回</button>
                         <button className="btn btn-danger btn-sm">驳回</button>
-                        <button className="btn btn-primary btn-sm">通过</button>
+                        <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
                       </div>
                     )}
                   </div>

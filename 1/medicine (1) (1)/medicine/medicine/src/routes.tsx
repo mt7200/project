@@ -3,7 +3,6 @@ import Layout from './components/Layout'
 import DiagnosisFlow from './pages/DiagnosisFlow'
 import PrescriptionFlow from './pages/PrescriptionFlow'
 import EMRViewEdit from './pages/EMRViewEdit'
-import HistoryRecords from './pages/HistoryRecords'
 import Statistics from './pages/Statistics'
 import Login from './pages/Login'
 
@@ -31,10 +30,6 @@ export const routes: RouteObject[] = [
       {
         path: 'emr',
         element: <EMRViewEdit />
-      },
-      {
-        path: 'history',
-        element: <HistoryRecords />
       },
       {
         path: 'statistics',

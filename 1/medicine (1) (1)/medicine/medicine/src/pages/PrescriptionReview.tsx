@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './PrescriptionReview.css'
 
 interface Prescription {
@@ -63,6 +64,7 @@ const prescriptions: Prescription[] = [
 ]
 
 export default function PrescriptionReview() {
+  const navigate = useNavigate()
   const [expandedId, setExpandedId] = useState<number | null>(null)
   const [selectedRx, setSelectedRx] = useState<Prescription | null>(null)
   const [filter, setFilter] = useState<string>('all')
@@ -195,7 +197,7 @@ export default function PrescriptionReview() {
                         <>
                           <button className="btn btn-ghost btn-sm">退回修改</button>
                           <button className="btn btn-danger btn-sm">驳回</button>
-                          <button className="btn btn-primary btn-sm">审核通过</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>审核通过</button>
                         </>
                       )}
                     </div>

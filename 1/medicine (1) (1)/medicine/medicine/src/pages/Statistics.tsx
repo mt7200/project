@@ -2,6 +2,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   LineChart, Line, PieChart, Pie, Cell, AreaChart, Area, Legend,
 } from 'recharts'
+import { useNavigate } from 'react-router-dom'
 import './Statistics.css'
 
 const monthlyData = [
@@ -48,12 +49,44 @@ const treatmentEffectData = [
   { month: '5月', 痊愈: 38, 显效: 44, 好转: 30 },
 ]
 
+function exportCSV(data: Record<string, unknown>[], filename: string, headers: Record<string, string>) {
+  const hRow = Object.values(headers).join(',')
+  const rows = data.map((item) =>
+    Object.keys(headers).map((k) => {
+      const v = item[k]
+      const s = v == null ? '' : String(v)
+      return s.includes(',') ? `"${s}"` : s
+    }).join(',')
+  )
+  const csv = [hRow, ...rows].join('\n')
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${filename}.csv`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function Statistics() {
+  const navigate = useNavigate()
   return (
     <div className="page-container">
       <div className="page-header">
-        <h1>诊疗数据统计</h1>
-        <p>查看诊疗、开方、审核等核心数据指标和趋势分析</p>
+        <div>
+          <h1>诊疗数据统计</h1>
+          <p>查看诊疗、开方、审核等核心数据指标和趋势分析</p>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button className="btn btn-outline btn-sm" onClick={() => exportCSV(monthlyData, '月度诊疗趋势', { month: '月份', visits: '诊疗人次', prescriptions: '处方数', reviewCount: '审核数' })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出月度数据
+          </button>
+          <button className="btn btn-outline btn-sm" onClick={() => exportCSV(syndromeData, '证型分布', { name: '证型', value: '病例数' })}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            导出证型数据
+          </button>
+        </div>
       </div>
 
       <div className="stats-layout">
@@ -119,7 +152,7 @@ export default function Statistics() {
                   <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#9CA8B8' }} axisLine={{ stroke: '#E8ECF1' }} tickLine={false} />
                   <YAxis tick={{ fontSize: 12, fill: '#9CA8B8' }} axisLine={false} tickLine={false} />
                   <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E8ECF1', fontSize: 13 }} />
-                  <Bar dataKey="visits" fill="#4A90D9" radius={[4, 4, 0, 0]} name="诊疗人次" />
+                  <Bar dataKey="visits" fill="#4A90D9" radius={[4, 4, 0, 0]} name="诊疗人次" style={{ cursor: 'pointer' }} onClick={(data) => navigate(`/emr?month=${data.month}`)} />
                   <Bar dataKey="prescriptions" fill="#7B61FF" radius={[4, 4, 0, 0]} name="处方数" />
                 </BarChart>
               </ResponsiveContainer>
@@ -167,7 +200,7 @@ export default function Statistics() {
                 <PieChart>
                   <Pie data={syndromeData} cx="50%" cy="45%" innerRadius={50} outerRadius={90} paddingAngle={2} dataKey="value">
                     {syndromeData.map((entry, index) => (
-                      <Cell key={index} fill={entry.color} />
+                      <Cell key={index} fill={entry.color} style={{ cursor: 'pointer' }} onClick={() => navigate(`/emr?syndrome=${entry.name}`)} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={{ borderRadius: 8, border: '1px solid #E8ECF1', fontSize: 13 }} />

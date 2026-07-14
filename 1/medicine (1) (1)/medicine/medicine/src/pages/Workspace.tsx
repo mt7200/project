@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import './Workspace.css'
 
 /* ============ Types ============ */
@@ -70,8 +71,35 @@ const prescriptions: Prescription[] = [
 
 const pulseOptions = ['浮', '沉', '迟', '数', '弱', '弦', '滑', '涩', '紧', '缓', '细', '虚', '实']
 
+const emrPatientList = [
+  { id: 1, name: '张三', gender: '男', age: 45, diagnosis: '风寒感冒', status: '待诊断' },
+  { id: 2, name: '李四', gender: '女', age: 38, diagnosis: '月经不调', status: '已诊断' },
+  { id: 3, name: '王五', gender: '男', age: 62, diagnosis: '腰痛病', status: '已诊断' },
+  { id: 4, name: '赵六', gender: '女', age: 55, diagnosis: '高血压', status: '可复诊' },
+  { id: 5, name: '钱九', gender: '男', age: 35, diagnosis: '待查', status: '未诊断完成' },
+  { id: 6, name: '孙七', gender: '男', age: 28, diagnosis: '咽喉炎', status: '已诊断' },
+]
+
 /* ============ Component ============ */
 export default function Workspace() {
+  const navigate = useNavigate()
+  const location = useLocation()
+
+  // ---- Receive patient from EMR page (auto-select and auto-fill) ----
+  useEffect(() => {
+    const state = location.state as Record<string, unknown> | null
+    const patient = state?.patient as { id: number; name: string; gender: string; age: number; diagnosis: string } | undefined
+    if (patient) {
+      setSelectedPatientFromBar(patient.id)
+      setForm(prev => ({
+        ...prev,
+        name: patient.name,
+        gender: patient.gender === '男' ? 'male' : 'female',
+        age: String(patient.age),
+      }))
+      window.history.replaceState({}, '')
+    }
+  }, [location.state])
   // ---- Diagnosis state ----
   const [form, setForm] = useState<PatientForm>({
     name: '', gender: '', age: '', phone: '', idCard: '', birthDate: '',
@@ -97,6 +125,7 @@ export default function Workspace() {
   const [compatibilityWarnings, setCompatibilityWarnings] = useState<string[]>([])
   const [expandedRxId, setExpandedRxId] = useState<number | null>(null)
   const [selectedRx, setSelectedRx] = useState<Prescription | null>(null)
+  const [selectedPatientFromBar, setSelectedPatientFromBar] = useState<number | null>(null)
 
   // ---- Handlers ----
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -120,6 +149,15 @@ export default function Workspace() {
     setCustomPattern(''); setCustomDescription(''); setCustomSymptoms(''); setSelectedPattern('')
   }
   const handleRemoveCustom = (id: string) => setCustomDiagnoses(prev => prev.filter(d => d.id !== id))
+
+  const handleAutoFill = (patient: typeof emrPatientList[0]) => {
+    setForm(prev => ({
+      ...prev,
+      name: patient.name,
+      gender: patient.gender === '男' ? 'male' : 'female',
+      age: String(patient.age),
+    }))
+  }
 
   const checkCompatibilities = (herbs: SelectedHerb[]) => {
     const w: string[] = []
@@ -164,6 +202,55 @@ export default function Workspace() {
   return (
     <div className="ws-page">
       <div className="ws-body">
+        {/* ========== 患者栏 ========== */}
+        <div className="ws-col ws-patient-bar" style={{ flex: '0 0 220px', maxWidth: 220 }}>
+          <div className="ws-col-title">
+            <span className="ws-col-icon blue">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>
+              </svg>
+            </span>
+            患者列表
+          </div>
+          <div className="ws-card">
+            <div className="ws-card-body" style={{ padding: 0 }}>
+              {emrPatientList.map(patient => {
+                const isSelected = selectedPatientFromBar === patient.id
+                return (
+                  <div key={patient.id} className={`ws-patient-item ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedPatientFromBar(patient.id)}>
+                    <div className="ws-patient-item-head">
+                      <span className="ws-patient-name">{patient.name}</span>
+                      <span className="ws-patient-gender">{patient.gender}/{patient.age}岁</span>
+                    </div>
+                    <div className="ws-patient-diagnosis">{patient.diagnosis}</div>
+                    <div className="ws-patient-status">{patient.status}</div>
+                    {isSelected && (
+                      <button className="btn btn-primary btn-sm" style={{ marginTop: 6, width: '100%' }} onClick={(e) => { e.stopPropagation(); handleAutoFill(patient) }}>
+                        自动填充
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+          {selectedPatientFromBar !== null && (() => {
+            const p = emrPatientList.find(x => x.id === selectedPatientFromBar)
+            return p ? (
+              <div className="ws-card" style={{ marginTop: 8 }}>
+                <div className="ws-card-head"><h3>患者信息</h3></div>
+                <div className="ws-card-body">
+                  <div className="ws-field"><label>姓名</label><span>{p.name}</span></div>
+                  <div className="ws-field"><label>性别</label><span>{p.gender}</span></div>
+                  <div className="ws-field"><label>年龄</label><span>{p.age}岁</span></div>
+                  <div className="ws-field"><label>诊断</label><span>{p.diagnosis}</span></div>
+                  <div className="ws-field"><label>状态</label><span>{p.status}</span></div>
+                </div>
+              </div>
+            ) : null
+          })()}
+        </div>
+
         {/* ========== 左栏：诊疗流程 ========== */}
         <div className="ws-col ws-left">
           <div className="ws-col-title">
@@ -364,9 +451,8 @@ export default function Workspace() {
             </div>
           </div>
 
-          <div className="ws-btn-row" style={{ justifyContent: 'flex-end' }}>
-            <button className="btn btn-outline btn-sm">暂存草稿</button>
-            <button className="btn btn-primary btn-sm">提交审方</button>
+          <div className="ws-btn-row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
+            <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>提交审方</button>
           </div>
         </div>
 
@@ -378,6 +464,73 @@ export default function Workspace() {
             </span>
             处方审核
             {pendingCount > 0 && <span className="ws-badge">{pendingCount}</span>}
+          </div>
+
+          {/* Agent 工作流 */}
+          <div className="ws-card" style={{ flex: 'none' }}>
+            <div className="ws-card-head">
+              <h3>
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                </svg>
+                Agent 智能审方
+              </h3>
+            </div>
+            <div className="ws-card-body" style={{ padding: '6px 10px' }}>
+              {/* Step 1: Input */}
+              <div className="ws-sub-title" style={{ fontSize: 10, marginTop: 0 }}>① 诊疗信息输入</div>
+              <div style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 2, padding: '3px 6px', background: 'var(--bg-page)', borderRadius: 4 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>李某</strong> · 男 58岁 · 2026-07-14<br />
+                主诉：反复头晕头痛3年，加重1周 · 血压 158/96 mmHg<br />
+                既往史：高血压病史5年 · 过敏史：无
+              </div>
+
+              {/* Step 2: Keywords */}
+              <div className="ws-sub-title" style={{ fontSize: 10 }}>② 关键词提取</div>
+              <div className="ws-tags" style={{ marginBottom: 2 }}>
+                <span className="ws-tag" style={{ background: '#E8F4FD', borderColor: '#91CAFF' }}>高血压</span>
+                <span className="ws-tag" style={{ background: '#F0EBFF', borderColor: '#B89EFF' }}>肝阳上亢</span>
+                <span className="ws-tag" style={{ background: '#FFF7E6', borderColor: '#FFD591' }}>头晕</span>
+                <span className="ws-tag" style={{ background: '#FFF0F0', borderColor: '#FFA39E' }}>头痛</span>
+                <span className="ws-tag" style={{ background: '#F0FFF4', borderColor: '#95DE64' }}>失眠</span>
+                <span className="ws-tag" style={{ background: '#E6FFFB', borderColor: '#87E8DE' }}>口苦咽干</span>
+              </div>
+
+              {/* Step 3: Agent Process */}
+              <div className="ws-sub-title" style={{ fontSize: 10 }}>③ Agent 审方分析</div>
+              <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                {[
+                  { label: '证型匹配', status: 'done', detail: '肝阳上亢证（匹配度 92%）' },
+                  { label: '方剂推荐', status: 'done', detail: '天麻钩藤饮加减' },
+                  { label: '配伍检查', status: 'done', detail: '未发现配伍禁忌' },
+                  { label: '剂量校验', status: 'done', detail: '所有药材在安全范围' },
+                  { label: '禁忌审查', status: 'done', detail: '无禁忌证冲突' },
+                ].map((step, i) => (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0' }}>
+                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#52C41A" strokeWidth="3">
+                      <polyline points="20 6 9 17 4 12" />
+                    </svg>
+                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{step.label}</span>
+                    <span style={{ color: 'var(--text-muted)' }}>— {step.detail}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Step 4: Output */}
+              <div className="ws-sub-title" style={{ fontSize: 10 }}>④ 审方结果输出</div>
+              <div style={{ fontSize: 10, lineHeight: 1.5, padding: '4px 6px', background: '#F0FFF4', border: '1px solid #95DE64', borderRadius: 4, color: 'var(--text-primary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <strong style={{ fontSize: 11, color: '#389E0D' }}>✓ 审方通过</strong>
+                  <span style={{ fontSize: 9, color: '#389E0D', background: '#D9F7BE', padding: '0 5px', borderRadius: 3 }}>低风险 12</span>
+                </div>
+                <div style={{ color: 'var(--text-secondary)' }}>
+                  推荐处方：天麻 12g · 钩藤 15g · 石决明 30g · 黄芩 9g · 牛膝 12g · 杜仲 12g · 栀子 9g · 茯神 15g
+                </div>
+                <div style={{ color: 'var(--text-secondary)', marginTop: 1 }}>
+                  煎服：每日1剂，水煎400ml，分早晚两次温服
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="ws-card">
@@ -407,7 +560,7 @@ export default function Workspace() {
                           <div className="ws-btn-row" style={{ marginTop: 8 }}>
                             <button className="btn btn-ghost btn-sm">退回</button>
                             <button className="btn btn-danger btn-sm">驳回</button>
-                            <button className="btn btn-primary btn-sm">通过</button>
+                            <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
                           </div>
                         )}
                       </div>
@@ -418,6 +571,10 @@ export default function Workspace() {
             </div>
           </div>
         </div>
+      </div>
+      {/* 底部操作栏 - 位于三栏布局外部 */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', padding: '8px 4px 0', borderTop: '1px solid var(--border)', marginTop: 8, flexShrink: 0 }}>
+        <button className="btn btn-outline btn-sm">暂存草稿</button>
       </div>
     </div>
   )

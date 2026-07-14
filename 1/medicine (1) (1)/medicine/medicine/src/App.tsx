@@ -2,7 +2,6 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Workspace from './pages/Workspace'
 import EMRViewEdit from './pages/EMRViewEdit'
-import HistoryRecords from './pages/HistoryRecords'
 import Statistics from './pages/Statistics'
 
 function App() {
@@ -12,7 +11,6 @@ function App() {
         <Route index element={<Navigate to="/workspace" replace />} />
         <Route path="workspace" element={<Workspace />} />
         <Route path="emr" element={<EMRViewEdit />} />
-        <Route path="history" element={<HistoryRecords />} />
         <Route path="statistics" element={<Statistics />} />
       </Route>
     </Routes>
