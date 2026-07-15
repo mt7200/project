@@ -412,9 +412,9 @@ export default function Workspace() {
           </div>
 
           {/* 患者录入 */}
-          <div className="ws-card" style={currentStep === 1 ? { flex: 'none' } : {}}>
+          <div className="ws-card" style={currentStep >= 1 ? { flex: 'none' } : {}}>
             <div className="ws-card-head"><h3>患者录入</h3></div>
-            {currentStep === 1 ? (
+            {currentStep >= 1 ? (
               <div className="ws-card-body" style={{ fontSize: 11, lineHeight: 1.7, padding: '6px 10px' }}>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 12px', marginBottom: 4 }}>
                   <span><strong>姓名：</strong>{form.name || '—'}</span>
@@ -598,8 +598,8 @@ export default function Workspace() {
           )}
           </div>
 
-          {/* 四诊采集 (Step 0) / 处方管理 (Step 1) */}
-          {currentStep === 1 ? (
+          {/* 四诊采集 (Step 0) / 处方管理 (Step 1,2) */}
+          {currentStep >= 1 ? (
             <div className="ws-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <div className="ws-card-head" style={{ background: 'var(--primary-bg)' }}>
                 <h3 style={{ color: 'var(--primary)' }}>
@@ -1005,42 +1005,54 @@ export default function Workspace() {
                 </div>
               </div>
 
-              {/* 处方列表 */}
+              {/* 当前患者处方审核 */}
               <div className="ws-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="ws-card-head"><h3>处方列表</h3><span className="ws-count">{prescriptions.length}张</span></div>
-                <div className="ws-card-body" style={{ padding: 0, overflowY: 'auto', flex: 1 }}>
+                <div className="ws-card-head"><h3>当前处方</h3></div>
+                <div className="ws-card-body" style={{ overflowY: 'auto', flex: 1 }}>
                   <div className="ws-rx-list">
-                    {prescriptions.map(rx => (
-                      <div key={rx.id} className={`ws-rx-card ${selectedRx?.id === rx.id ? 'selected' : ''}`} onClick={() => { setSelectedRx(selectedRx?.id === rx.id ? null : rx); setExpandedRxId(expandedRxId === rx.id ? null : rx.id) }}>
-                        <div className="ws-rx-head">
-                          <div className="ws-rx-left">
-                            <span className={`ws-rx-dot ${rx.riskLevel}`} />
-                            <div>
-                              <div className="ws-rx-patient">{rx.patientName} · {rx.patientGender} {rx.patientAge}岁</div>
-                              <div className="ws-rx-diag">{rx.diagnosis} / {rx.syndrome}</div>
-                            </div>
-                          </div>
-                          <div className="ws-rx-right">
-                            <span className={`ws-risk-tag ${rx.riskLevel}`}>{rx.riskLevel === 'high' ? '高' : rx.riskLevel === 'medium' ? '中' : '低'} {rx.riskScore}</span>
-                            <span className={`ws-status ${rx.status}`}>{rx.status === 'pending' ? '待审' : rx.status === 'approved' ? '通过' : '驳回'}</span>
+                    <div className="ws-rx-card selected" style={{ cursor: 'default' }}>
+                      <div className="ws-rx-head">
+                        <div className="ws-rx-left">
+                          <span className="ws-rx-dot low" />
+                          <div>
+                            <div className="ws-rx-patient">{form.name || '李某'} · {form.gender || '男'} {form.age || '58'}岁</div>
+                            <div className="ws-rx-diag">{form.diagnosis || '高血压病'} / {selectedPattern || form.differentiation || '肝阳上亢证'}</div>
                           </div>
                         </div>
-                        {expandedRxId === rx.id && (
-                          <div className="ws-rx-body">
-                            <div className="ws-tags">{rx.herbs.map(h => <span key={h} className="ws-tag">{h}</span>)}</div>
-                            {rx.risks.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">风险项</div><ul className="ws-risk-list">{rx.risks.map((r, i) => <li key={i} className="danger">{r}</li>)}</ul></div>}
-                            {rx.suggestions.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">建议</div><ul className="ws-risk-list">{rx.suggestions.map((s, i) => <li key={i} className="success">{s}</li>)}</ul></div>}
-                            {rx.status === 'pending' && (
-                              <div className="ws-btn-row" style={{ marginTop: 8 }}>
-                                <button className="btn btn-ghost btn-sm">退回</button>
-                                <button className="btn btn-danger btn-sm">驳回</button>
-                                <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
-                              </div>
-                            )}
-                          </div>
-                        )}
+                        <div className="ws-rx-right">
+                          <span className="ws-risk-tag low">低 12</span>
+                          <span className="ws-status pending">待审</span>
+                        </div>
                       </div>
-                    ))}
+                      <div className="ws-rx-body">
+                        <div className="ws-sub-title">处方药材</div>
+                        <div className="ws-tags" style={{ marginBottom: 6 }}>
+                          {isCustomFormula
+                            ? aiHerbs.map((h, i) => <span key={i} className="ws-tag">{h.name} {h.dosage}</span>)
+                            : prescriptionMock.formulas[selectedFormulaIdx].herbs.map((h, i) => <span key={i} className="ws-tag">{h.name} {h.dosage}</span>)
+                          }
+                        </div>
+                        <div className="ws-rx-section">
+                          <div className="ws-sub-title">风险项</div>
+                          <ul className="ws-risk-list">
+                            <li className="danger">未发现配伍禁忌</li>
+                            <li className="danger">所有药材剂量在安全范围</li>
+                          </ul>
+                        </div>
+                        <div className="ws-rx-section">
+                          <div className="ws-sub-title">建议</div>
+                          <ul className="ws-risk-list">
+                            <li className="success">建议饭后温服</li>
+                            <li className="success">忌食生冷辛辣</li>
+                          </ul>
+                        </div>
+                        <div className="ws-btn-row" style={{ marginTop: 8 }}>
+                          <button className="btn btn-ghost btn-sm">退回</button>
+                          <button className="btn btn-danger btn-sm">驳回</button>
+                          <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
