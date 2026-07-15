@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './Workspace.css'
 
@@ -80,6 +80,58 @@ const emrPatientList = [
   { id: 6, name: '孙七', gender: '男', age: 28, diagnosis: '咽喉炎', status: '已诊断' },
 ]
 
+// ---- AI 辅助开方 Mock 数据 ----
+const prescriptionMock = {
+  complaint: "咳嗽反复2周，夜间加重",
+  symptoms: ["咽干", "痰少", "口渴"],
+  tongue: "舌红少苔",
+  pulse: "细数",
+  syndrome: "肺阴虚证",
+  keywords: ["咳嗽", "咽干", "痰少", "口渴", "舌红少苔", "细数", "肺阴虚"],
+  treatment: "养阴润肺",
+  formulas: [
+    {
+      name: "沙参麦冬汤",
+      herbs: [
+        { name: "北沙参", dosage: "15g" },
+        { name: "麦冬", dosage: "12g" },
+        { name: "玉竹", dosage: "10g" },
+        { name: "桑叶", dosage: "10g" },
+        { name: "天花粉", dosage: "10g" },
+      ],
+      effects: ["养阴清肺", "生津润燥", "止咳化痰"],
+      reason: "根据患者肺阴亏虚、津液不足、干咳少痰等表现，以沙参麦冬汤养阴清肺、生津润燥，为经典首选方案。",
+    },
+    {
+      name: "百合固金汤",
+      herbs: [
+        { name: "百合", dosage: "12g" },
+        { name: "生地黄", dosage: "15g" },
+        { name: "熟地黄", dosage: "12g" },
+        { name: "麦冬", dosage: "10g" },
+        { name: "川贝母", dosage: "6g" },
+        { name: "桔梗", dosage: "6g" },
+      ],
+      effects: ["滋肾保肺", "止咳化痰", "清热凉血"],
+      reason: "患者肺阴虚兼阴虚内热明显，百合固金汤可滋肾保肺、清热润燥，适合阴虚咳嗽较甚者。",
+    },
+    {
+      name: "养阴清肺汤",
+      herbs: [
+        { name: "生地黄", dosage: "12g" },
+        { name: "麦冬", dosage: "12g" },
+        { name: "白芍", dosage: "10g" },
+        { name: "牡丹皮", dosage: "10g" },
+        { name: "贝母", dosage: "6g" },
+        { name: "玄参", dosage: "12g" },
+        { name: "薄荷", dosage: "6g" },
+      ],
+      effects: ["养阴清肺", "解毒利咽", "润燥止咳"],
+      reason: "患者咽干口渴症状突出，养阴清肺汤原方善治阴虚肺燥，兼可利咽生津，为对本证之良方。",
+    },
+  ],
+}
+
 /* ============ Component ============ */
 export default function Workspace() {
   const navigate = useNavigate()
@@ -116,6 +168,18 @@ export default function Workspace() {
   const [customPattern, setCustomPattern] = useState('')
   const [customDescription, setCustomDescription] = useState('')
   const [customSymptoms, setCustomSymptoms] = useState('')
+
+  // ---- Editable AI prescription herbs ----
+  interface EditableHerb { name: string; dosage: string }
+  const [selectedFormulaIdx, setSelectedFormulaIdx] = useState(0)
+  const [aiHerbs, setAiHerbs] = useState<EditableHerb[]>(
+    () => prescriptionMock.formulas[0].herbs.map(h => ({ ...h }))
+  )
+  const [editingHerbIdx, setEditingHerbIdx] = useState<number | null>(null)
+  const [editName, setEditName] = useState('')
+  const [editDosage, setEditDosage] = useState('')
+  const [deletedHerb, setDeletedHerb] = useState<{ herb: EditableHerb; index: number } | null>(null)
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // ---- Prescription state ----
   const [selectedFormula, setSelectedFormula] = useState('')
@@ -243,7 +307,7 @@ export default function Workspace() {
             return p ? (
               <div className="ws-card" style={{ marginTop: 8 }}>
                 <div className="ws-card-head"><h3>患者信息</h3></div>
-                <div className="ws-card-body">
+                <div className="ws-card-body" style={{ flex: 1, minHeight: 0 }}>
                   <div className="ws-field"><label>姓名</label><span>{p.name}</span></div>
                   <div className="ws-field"><label>性别</label><span>{p.gender}</span></div>
                   <div className="ws-field"><label>年龄</label><span>{p.age}岁</span></div>
@@ -419,89 +483,195 @@ export default function Workspace() {
 
           {/* ===== 步骤1：智能开方 ===== */}
           {currentStep === 1 && (
-            <>
-              {compatibilityWarnings.length > 0 && (
-                <div className="ws-warning">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  配伍风险 {compatibilityWarnings.length} 项
+            <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              {/* ===== 合并面板：诊疗信息 → 关键词 → Agent分析 ===== */}
+              <div className="ws-card" style={{ flex: 'none' }}>
+                <div className="ws-card-head">
+                  <h3>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    Agent辅助诊疗分析
+                  </h3>
                 </div>
-              )}
+                <div className="ws-card-body" style={{ padding: '6px 10px', fontSize: 11 }}>
+                  {/* 诊疗信息 */}
+                  <div className="ws-sub-title" style={{ fontSize: 10, marginTop: 0, marginBottom: 4 }}>① 当前诊疗信息</div>
+                  <div style={{ color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: 6, padding: '4px 8px', background: 'var(--bg-page)', borderRadius: 4 }}>
+                    <strong style={{ color: 'var(--text-primary)' }}>主诉：</strong>{prescriptionMock.complaint}<br />
+                    <strong style={{ color: 'var(--text-primary)' }}>现病史：</strong>{prescriptionMock.symptoms.join('、')}<br />
+                    <strong style={{ color: 'var(--text-primary)' }}>舌象：</strong>{prescriptionMock.tongue}　
+                    <strong style={{ color: 'var(--text-primary)' }}>脉象：</strong>{prescriptionMock.pulse}<br />
+                    <strong style={{ color: 'var(--text-primary)' }}>辨证：</strong><span style={{ color: 'var(--primary)', fontWeight: 500 }}>{prescriptionMock.syndrome}</span>
+                  </div>
 
-              {/* 推荐方剂 */}
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>推荐方剂</h3></div>
-                <div className="ws-card-body">
-                  <div className="ws-formula-grid">
-                    {commonFormulas.map(f => (
-                      <button key={f.name} className={`ws-formula-card ${selectedFormula === f.name ? 'active' : ''}`} onClick={() => applyFormula(f.name)}>
-                        <span className="ws-formula-name">{f.name}</span>
-                        <span className="ws-formula-cat">{f.category}</span>
-                        <span className="ws-formula-herbs">{f.herbs.join('、')}</span>
-                      </button>
+                  {/* 关键词 */}
+                  <div className="ws-sub-title" style={{ fontSize: 10, marginBottom: 4 }}>② Agent预处理 → 关键词提取</div>
+                  <div className="ws-tags" style={{ marginBottom: 6 }}>
+                    {prescriptionMock.keywords.map((kw, i) => (
+                      <span key={i} className="ws-tag" style={{ 
+                        background: ['#E8F4FD','#F0EBFF','#FFF7E6','#FFF0F0','#F0FFF4','#E6FFFB','#FFF0F6'][i % 7],
+                        borderColor: ['#91CAFF','#B89EFF','#FFD591','#FFA39E','#95DE64','#87E8DE','#FF85C0'][i % 7],
+                        fontSize: 10
+                      }}>
+                        {kw}
+                      </span>
                     ))}
+                  </div>
+
+                  {/* Agent分析 */}
+                  <div className="ws-sub-title" style={{ fontSize: 10, marginBottom: 4 }}>③ Agent分析结果</div>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 2 }}>
+                    <span><strong>证型识别：</strong>{prescriptionMock.syndrome}</span>
+                    <span><strong>治法建议：</strong>{prescriptionMock.treatment}、生津止咳</span>
+                    <span><strong>推荐方向：</strong>润肺养阴类方剂</span>
                   </div>
                 </div>
               </div>
 
-              {/* 处方明细 */}
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>处方明细</h3><span className="ws-count">{selectedHerbs.length}味</span></div>
-                <div className="ws-card-body">
-                  {selectedHerbs.length === 0 ? (
-                    <div className="ws-empty">请选择方剂或从药库添加</div>
-                  ) : (
-                    <div className="ws-herbs-list">
-                      {selectedHerbs.map(herb => {
-                        const over = herb.currentDosage > herb.maxDosage
-                        const under = herb.currentDosage < herb.minDosage && herb.currentDosage > 0
-                        return (
-                          <div key={herb.id} className={`ws-herb ${over || under ? 'warn' : ''}`}>
-                            <div className="ws-herb-info">
-                              <span className="ws-herb-name">{herb.name}{herb.toxic && <span className="ws-toxic">毒</span>}</span>
-                              <span className="ws-herb-meta">{herb.nature}·{herb.taste}·归{herb.meridian}</span>
-                            </div>
-                            <div className="ws-herb-dosage">
-                              <span className="ws-range">{herb.minDosage}-{herb.maxDosage}{herb.unit}</span>
-                              <div className="ws-dosage-ctrl">
-                                <button onClick={() => updateDosage(herb.id, Math.max(0, herb.currentDosage - 1))}>−</button>
-                                <input type="number" className={over ? 'over' : under ? 'under' : ''} value={herb.currentDosage} onChange={e => updateDosage(herb.id, parseFloat(e.target.value) || 0)} />
-                                <button onClick={() => updateDosage(herb.id, herb.currentDosage + 1)}>+</button>
-                                <span>{herb.unit}</span>
-                              </div>
-                            </div>
-                            <button className="ws-herb-x" onClick={() => removeHerb(herb.id)}>×</button>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
+              {/* 连接箭头 */}
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: 16, lineHeight: 1 }}>↓</div>
 
-              {/* 药库检索 */}
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>药库检索</h3></div>
-                <div className="ws-card-body">
-                  <input className="ws-search" placeholder="搜索药名、类别、功效..." value={searchHerb} onChange={e => setSearchHerb(e.target.value)} />
-                  <div className="ws-lib-list">
-                    {filteredHerbs.map(h => (
-                      <div key={h.id} className={`ws-lib-item ${selectedHerbs.some(sh => sh.id === h.id) ? 'selected' : ''}`} onClick={() => addHerb(h)}>
-                        <div><span className="ws-lib-name">{h.name}</span><span className="ws-lib-meta">{h.nature}，{h.taste}</span></div>
-                        <span className="ws-lib-dose">{h.minDosage}-{h.maxDosage}{h.unit}</span>
+              {/* ===== 推荐方剂（自动撑满剩余高度） ===== */}
+              <div className="ws-card" style={{ borderColor: 'var(--primary)', borderWidth: 1.5, flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="ws-card-head" style={{ background: 'var(--primary-bg)' }}>
+                  <h3 style={{ color: 'var(--primary)' }}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="9 11 12 14 22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                    </svg>
+                    AI推荐方剂
+                  </h3>
+                </div>
+                <div className="ws-card-body" style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                  {/* 多推荐方剂选择 */}
+                  <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+                    {prescriptionMock.formulas.map((f, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          setSelectedFormulaIdx(i)
+                          setAiHerbs(f.herbs.map(h => ({ ...h })))
+                          setDeletedHerb(null)
+                        }}
+                        style={{
+                          flex: 1, padding: '6px 8px', borderRadius: 6, cursor: 'pointer', textAlign: 'center',
+                          border: selectedFormulaIdx === i ? '1.5px solid var(--primary)' : '1px solid #E0E0E0',
+                          background: selectedFormulaIdx === i ? 'var(--primary-bg)' : '#FAFAFA',
+                          transition: 'all 0.15s',
+                        }}
+                      >
+                        <div style={{ fontSize: 12, fontWeight: selectedFormulaIdx === i ? 600 : 400, color: selectedFormulaIdx === i ? 'var(--primary)' : 'var(--text-primary)' }}>
+                          {f.name}
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>{f.herbs.length}味</div>
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
 
-              {/* 医嘱备注 */}
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>医嘱备注</h3></div>
-                <div className="ws-card-body">
-                  <textarea className="ws-notes" placeholder="用法用量、煎服方法、忌口等..." value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+                  <div className="ws-sub-title" style={{ fontSize: 11, marginTop: 0 }}>组成
+                    <span style={{ fontWeight: 400, color: 'var(--text-muted)', marginLeft: 6, fontSize: 10 }}>点击药材可修改</span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+                    {aiHerbs.map((h, i) => (
+                      editingHerbIdx === i ? (
+                        <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center', padding: '2px 6px', background: '#fff', border: '1px solid var(--primary)', borderRadius: 6 }}>
+                          <input
+                            style={{ width: 70, border: 'none', outline: 'none', fontSize: 12, padding: '2px 0' }}
+                            value={editName}
+                            onChange={e => setEditName(e.target.value)}
+                            placeholder="药名"
+                          />
+                          <input
+                            style={{ width: 50, border: 'none', outline: 'none', fontSize: 12, padding: '2px 0', textAlign: 'right' }}
+                            value={editDosage}
+                            onChange={e => setEditDosage(e.target.value)}
+                            placeholder="剂量"
+                          />
+                          <button
+                            style={{ border: 'none', background: 'var(--primary)', color: '#fff', borderRadius: 4, fontSize: 10, padding: '1px 6px', cursor: 'pointer' }}
+                            onClick={() => {
+                              if (editName.trim()) {
+                                const updated = [...aiHerbs]
+                                updated[i] = { name: editName.trim(), dosage: editDosage.trim() }
+                                setAiHerbs(updated)
+                              }
+                              setEditingHerbIdx(null)
+                            }}
+                          >✓</button>
+                          <button
+                            style={{ border: 'none', background: 'transparent', color: '#999', cursor: 'pointer', fontSize: 12 }}
+                            onClick={() => setEditingHerbIdx(null)}
+                          >×</button>
+                          <button
+                            style={{ border: 'none', background: '#FF4D4F', color: '#fff', borderRadius: 4, fontSize: 10, padding: '1px 6px', cursor: 'pointer' }}
+                            onClick={() => {
+                              setDeletedHerb({ herb: aiHerbs[i], index: i })
+                              setAiHerbs(prev => prev.filter((_, idx) => idx !== i))
+                              setEditingHerbIdx(null)
+                              if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+                              undoTimeoutRef.current = setTimeout(() => setDeletedHerb(null), 6000)
+                            }}
+                          >删</button>
+                        </div>
+                      ) : (
+                        <span
+                          key={i}
+                          className="ws-tag"
+                          style={{ fontSize: 12, background: '#F0FFF4', borderColor: '#95DE64', padding: '3px 10px', cursor: 'pointer' }}
+                          onClick={() => {
+                            setEditingHerbIdx(i)
+                            setEditName(h.name)
+                            setEditDosage(h.dosage)
+                          }}
+                        >
+                          {h.name} <strong>{h.dosage}</strong>
+                        </span>
+                      )
+                    ))}
+                    <span
+                      className="ws-tag"
+                      style={{ fontSize: 12, background: '#FAFAFA', borderColor: '#D9D9D9', padding: '3px 10px', cursor: 'pointer', color: 'var(--text-muted)' }}
+                      onClick={() => {
+                        setAiHerbs(prev => [...prev, { name: '', dosage: '' }])
+                        setEditingHerbIdx(aiHerbs.length)
+                        setEditName('')
+                        setEditDosage('')
+                      }}
+                    >
+                      + 添加药材
+                    </span>
+                  </div>
+
+                  {deletedHerb && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, padding: '4px 10px', background: '#FFF7E6', border: '1px solid #FFD591', borderRadius: 6, fontSize: 11 }}>
+                      <span style={{ color: 'var(--text-secondary)' }}>已删除 {deletedHerb.herb.name} {deletedHerb.herb.dosage}</span>
+                      <button
+                        style={{ border: '1px solid var(--primary)', background: '#fff', color: 'var(--primary)', borderRadius: 4, fontSize: 11, padding: '1px 10px', cursor: 'pointer' }}
+                        onClick={() => {
+                          const restored = [...aiHerbs]
+                          restored.splice(deletedHerb.index, 0, deletedHerb.herb)
+                          setAiHerbs(restored)
+                          setDeletedHerb(null)
+                          if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current)
+                        }}
+                      >撤销</button>
+                    </div>
+                  )}
+
+                  <div className="ws-sub-title" style={{ fontSize: 11 }}>功效</div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8, fontSize: 12, color: 'var(--text-secondary)' }}>
+                    {prescriptionMock.formulas[selectedFormulaIdx].effects.map((e, i) => (
+                      <span key={i} style={{ padding: '2px 8px', background: '#FFF7E6', borderRadius: 4, border: '1px solid #FFD591' }}>{e}</span>
+                    ))}
+                  </div>
+
+                  <div className="ws-sub-title" style={{ fontSize: 11 }}>推荐理由</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-secondary)', lineHeight: 1.6, padding: '6px 10px', background: 'var(--bg-page)', borderRadius: 6 }}>
+                    {prescriptionMock.formulas[selectedFormulaIdx].reason}
+                  </div>
                 </div>
-              </div>
-            </>
+            </div>
+          </div>
           )}
 
           {/* ===== 步骤2：处方审核 ===== */}
