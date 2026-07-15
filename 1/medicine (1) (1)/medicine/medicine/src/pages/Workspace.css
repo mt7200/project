@@ -882,6 +882,16 @@
   font-weight: 500;
 }
 
+.ws-ai-formula-name {
+  font-size: 12px;
+  font-weight: 400;
+  color: #08979C;
+}
+.ws-ai-formula-name.active {
+  font-weight: 600;
+  color: var(--primary);
+}
+
 .ws-patient-bar .ws-field {
   margin-bottom: 3px;
 }
