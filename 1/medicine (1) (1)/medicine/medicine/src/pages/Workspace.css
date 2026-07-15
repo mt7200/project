@@ -26,13 +26,22 @@
   overflow: hidden;
 }
 
+.ws-patient-bar {
+  flex: 1;
+  min-width: 0;
+}
+
+.ws-col.ws-patient-bar {
+  max-width: none;
+}
+
 .ws-left {
-  flex: 3;
+  flex: 4;
   min-width: 0;
 }
 
 .ws-center {
-  flex: 3;
+  flex: 1;
   min-width: 0;
 }
 
@@ -835,7 +844,8 @@
     flex-direction: column;
     overflow-y: auto;
   }
-  .ws-left, .ws-right {
-    flex: 1;
+  .ws-left, .ws-center {
+    flex: none;
+    width: 100%;
   }
 }

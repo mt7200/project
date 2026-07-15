@@ -127,6 +127,10 @@ export default function Workspace() {
   const [selectedRx, setSelectedRx] = useState<Prescription | null>(null)
   const [selectedPatientFromBar, setSelectedPatientFromBar] = useState<number | null>(null)
 
+  // ---- Step wizard state ----
+  const [currentStep, setCurrentStep] = useState(0)
+  const wizardSteps = ['辨证诊断', '智能开方', '处方审核']
+
   // ---- Handlers ----
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [e.target.name]: e.target.value }))
@@ -203,7 +207,7 @@ export default function Workspace() {
     <div className="ws-page">
       <div className="ws-body">
         {/* ========== 患者栏 ========== */}
-        <div className="ws-col ws-patient-bar" style={{ flex: '0 0 220px', maxWidth: 220 }}>
+        <div className="ws-col ws-patient-bar">
           <div className="ws-col-title">
             <span className="ws-col-icon blue">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -314,260 +318,313 @@ export default function Workspace() {
             </div>
           </div>
 
-          {/* 辨证诊断 */}
-          <div className="ws-card">
-            <div className="ws-card-head"><h3>辨证诊断</h3><span className="ws-ai-badge">AI</span></div>
-            <div className="ws-card-body">
-              <div className="ws-diag-results">
-                {diagnosisResults.map(r => (
-                  <div key={r.pattern} className={`ws-diag-card ${selectedPattern === r.pattern ? 'selected' : ''}`} onClick={() => handleSelectPattern(r)}>
-                    <div className="ws-diag-head"><span className="ws-diag-name">{r.pattern}</span><span className="ws-diag-conf">{r.confidence}%</span></div>
-                    <p className="ws-diag-desc">{r.description}</p>
-                    <div className="ws-tags">{r.symptoms.map((s, i) => <span key={i} className="ws-tag">{s}</span>)}</div>
-                  </div>
-                ))}
-              </div>
 
-              {customDiagnoses.length > 0 && <div className="ws-sub-title">已选证型</div>}
-              {customDiagnoses.map(d => (
-                <div key={d.id} className="ws-chosen-diag">
-                  <div className="ws-chosen-head"><strong>{d.pattern}</strong><button className="ws-btn-x" onClick={() => handleRemoveCustom(d.id)}>×</button></div>
-                  <p>{d.description}</p>
-                  <div className="ws-tags">{d.symptoms.map((s, i) => <span key={i} className="ws-tag">{s}</span>)}</div>
-                </div>
-              ))}
-
-              <div className="ws-sub-title">添加辨证</div>
-              <div className="ws-field"><label>证型</label><input value={customPattern} onChange={e => setCustomPattern(e.target.value)} placeholder="输入或点击AI建议" /></div>
-              <div className="ws-field"><label>描述</label><textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder="证型描述" rows={2} /></div>
-              <div className="ws-field"><label>关键症状</label><input value={customSymptoms} onChange={e => setCustomSymptoms(e.target.value)} placeholder="顿号分隔" /></div>
-              {selectedResult && (
-                <div className="ws-ai-suggest">
-                  <span>AI建议：</span>
-                  <div className="ws-tags">{selectedResult.symptoms.map((s, i) => (
-                    <button key={i} className={`ws-tag clickable ${customSymptoms.includes(s) ? 'selected' : ''}`} onClick={() => {
-                      const cur = customSymptoms.split(/[,，、]/).map(x => x.trim()).filter(x => x)
-                      if (!cur.includes(s)) setCustomSymptoms([...cur, s].join('、'))
-                    }}>{s}</button>
-                  ))}</div>
-                </div>
-              )}
-              <div className="ws-btn-row">
-                <button className="btn btn-ghost btn-sm" onClick={() => { setCustomPattern(''); setCustomDescription(''); setCustomSymptoms(''); setSelectedPattern('') }}>清空</button>
-                <button className="btn btn-primary btn-sm" onClick={handleAddCustomDiagnosis}>添加</button>
-              </div>
-            </div>
-          </div>
         </div>
 
-        {/* ========== 中栏：智能开方 ========== */}
+        {/* ========== 中栏：步骤向导 ========== */}
         <div className="ws-col ws-center">
           <div className="ws-col-title">
             <span className="ws-col-icon purple">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" /><rect x="9" y="3" width="6" height="4" rx="1" /><path d="M12 11v3" /><path d="M9 12.5h6" /></svg>
             </span>
-            智能开方
+            {wizardSteps[currentStep]}
           </div>
 
-          {compatibilityWarnings.length > 0 && (
-            <div className="ws-warning">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-              配伍风险 {compatibilityWarnings.length} 项
-            </div>
-          )}
-
-          {/* 推荐方剂 */}
-          <div className="ws-card">
-            <div className="ws-card-head"><h3>推荐方剂</h3></div>
-            <div className="ws-card-body">
-              <div className="ws-formula-grid">
-                {commonFormulas.map(f => (
-                  <button key={f.name} className={`ws-formula-card ${selectedFormula === f.name ? 'active' : ''}`} onClick={() => applyFormula(f.name)}>
-                    <span className="ws-formula-name">{f.name}</span>
-                    <span className="ws-formula-cat">{f.category}</span>
-                    <span className="ws-formula-herbs">{f.herbs.join('、')}</span>
-                  </button>
-                ))}
+          {/* 步骤指示器 */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0, marginBottom: 8, flexShrink: 0 }}>
+            {wizardSteps.map((step, index) => (
+              <div key={step} style={{ display: 'flex', alignItems: 'center' }}>
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  width: 24, height: 24, borderRadius: '50%',
+                  background: index < currentStep ? 'var(--success)' : index === currentStep ? 'var(--primary)' : 'var(--border)',
+                  color: '#fff', fontSize: 11, fontWeight: 600, flexShrink: 0
+                }}>
+                  {index < currentStep ? '✓' : index + 1}
+                </div>
+                <span style={{
+                  fontSize: 11, marginLeft: 5, fontWeight: index === currentStep ? 600 : 400,
+                  color: index === currentStep ? 'var(--text-primary)' : 'var(--text-muted)'
+                }}>
+                  {step}
+                </span>
+                {index < wizardSteps.length - 1 && (
+                  <div style={{
+                    width: 40, height: 2, margin: '0 8px',
+                    background: index < currentStep ? 'var(--success)' : 'var(--border)',
+                    borderRadius: 1
+                  }} />
+                )}
               </div>
-            </div>
+            ))}
           </div>
 
-          {/* 处方明细 */}
-          <div className="ws-card">
-            <div className="ws-card-head"><h3>处方明细</h3><span className="ws-count">{selectedHerbs.length}味</span></div>
-            <div className="ws-card-body">
-              {selectedHerbs.length === 0 ? (
-                <div className="ws-empty">请选择方剂或从药库添加</div>
-              ) : (
-                <div className="ws-herbs-list">
-                  {selectedHerbs.map(herb => {
-                    const over = herb.currentDosage > herb.maxDosage
-                    const under = herb.currentDosage < herb.minDosage && herb.currentDosage > 0
-                    return (
-                      <div key={herb.id} className={`ws-herb ${over || under ? 'warn' : ''}`}>
-                        <div className="ws-herb-info">
-                          <span className="ws-herb-name">{herb.name}{herb.toxic && <span className="ws-toxic">毒</span>}</span>
-                          <span className="ws-herb-meta">{herb.nature}·{herb.taste}·归{herb.meridian}</span>
+          {/* ===== 步骤0：辨证诊断 ===== */}
+          {currentStep === 0 && (
+            <>
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>AI 推荐辨证</h3></div>
+                <div className="ws-card-body">
+                  <div className="ws-diag-results">
+                    {diagnosisResults.map(result => (
+                      <div key={result.pattern} className={`ws-diag-card ${selectedPattern === result.pattern ? 'selected' : ''}`} onClick={() => handleSelectPattern(result)}>
+                        <div className="ws-diag-head">
+                          <span className="ws-diag-name">{result.pattern}</span>
+                          <span className="ws-diag-conf">{result.confidence}%</span>
                         </div>
-                        <div className="ws-herb-dosage">
-                          <span className="ws-range">{herb.minDosage}-{herb.maxDosage}{herb.unit}</span>
-                          <div className="ws-dosage-ctrl">
-                            <button onClick={() => updateDosage(herb.id, Math.max(0, herb.currentDosage - 1))}>−</button>
-                            <input type="number" className={over ? 'over' : under ? 'under' : ''} value={herb.currentDosage} onChange={e => updateDosage(herb.id, parseFloat(e.target.value) || 0)} />
-                            <button onClick={() => updateDosage(herb.id, herb.currentDosage + 1)}>+</button>
-                            <span>{herb.unit}</span>
-                          </div>
-                        </div>
-                        <button className="ws-herb-x" onClick={() => removeHerb(herb.id)}>×</button>
+                        <div className="ws-diag-desc">{result.description}</div>
+                        <div className="ws-tags">{result.symptoms.map(s => <span key={s} className="ws-tag">{s}</span>)}</div>
                       </div>
-                    )
-                  })}
+                    ))}
+                  </div>
+                  {selectedResult && (
+                    <div className="ws-ai-suggest">
+                      已选择：<strong>{selectedResult.pattern}</strong>（匹配度 {selectedResult.confidence}%）
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>自定义辨证</h3></div>
+                <div className="ws-card-body">
+                  <div className="ws-form-grid">
+                    <div className="ws-field"><label>证型名称</label><input value={customPattern} onChange={e => setCustomPattern(e.target.value)} placeholder="如：肝肾阴虚证" /></div>
+                  </div>
+                  <div className="ws-field full"><label>证型描述</label><textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder="描述辨证依据" rows={2} /></div>
+                  <div className="ws-field full"><label>临床表现</label><textarea value={customSymptoms} onChange={e => setCustomSymptoms(e.target.value)} placeholder="症状，逗号分隔" rows={2} /></div>
+                  <button className="btn btn-primary btn-sm" onClick={handleAddCustomDiagnosis}>添加辨证</button>
+                </div>
+              </div>
+
+              {customDiagnoses.length > 0 && (
+                <div className="ws-card">
+                  <div className="ws-card-head"><h3>已辨证列表</h3></div>
+                  <div className="ws-card-body">
+                    {customDiagnoses.map(d => (
+                      <div key={d.id} className="ws-chosen-diag">
+                        <div className="ws-chosen-head">
+                          <strong>{d.pattern}</strong>
+                          <button className="ws-btn-x" onClick={() => handleRemoveCustom(d.id)}>×</button>
+                        </div>
+                        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>{d.description}</div>
+                        <div className="ws-tags">{d.symptoms.map(s => <span key={s} className="ws-tag">{s}</span>)}</div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          </div>
+            </>
+          )}
 
-          {/* 药库检索 */}
-          <div className="ws-card">
-            <div className="ws-card-head"><h3>药库检索</h3></div>
-            <div className="ws-card-body">
-              <input className="ws-search" placeholder="搜索药名、类别、功效..." value={searchHerb} onChange={e => setSearchHerb(e.target.value)} />
-              <div className="ws-lib-list">
-                {filteredHerbs.map(h => (
-                  <div key={h.id} className={`ws-lib-item ${selectedHerbs.some(sh => sh.id === h.id) ? 'selected' : ''}`} onClick={() => addHerb(h)}>
-                    <div><span className="ws-lib-name">{h.name}</span><span className="ws-lib-meta">{h.nature}，{h.taste}</span></div>
-                    <span className="ws-lib-dose">{h.minDosage}-{h.maxDosage}{h.unit}</span>
+          {/* ===== 步骤1：智能开方 ===== */}
+          {currentStep === 1 && (
+            <>
+              {compatibilityWarnings.length > 0 && (
+                <div className="ws-warning">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                  配伍风险 {compatibilityWarnings.length} 项
+                </div>
+              )}
+
+              {/* 推荐方剂 */}
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>推荐方剂</h3></div>
+                <div className="ws-card-body">
+                  <div className="ws-formula-grid">
+                    {commonFormulas.map(f => (
+                      <button key={f.name} className={`ws-formula-card ${selectedFormula === f.name ? 'active' : ''}`} onClick={() => applyFormula(f.name)}>
+                        <span className="ws-formula-name">{f.name}</span>
+                        <span className="ws-formula-cat">{f.category}</span>
+                        <span className="ws-formula-herbs">{f.herbs.join('、')}</span>
+                      </button>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 医嘱备注 */}
-          <div className="ws-card">
-            <div className="ws-card-head"><h3>医嘱备注</h3></div>
-            <div className="ws-card-body">
-              <textarea className="ws-notes" placeholder="用法用量、煎服方法、忌口等..." value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
-            </div>
-          </div>
-
-          <div className="ws-btn-row" style={{ justifyContent: 'flex-end', marginTop: 8 }}>
-            <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>提交审方</button>
-          </div>
-        </div>
-
-        {/* ========== 右栏：处方审核 ========== */}
-        <div className="ws-col ws-right">
-          <div className="ws-col-title">
-            <span className="ws-col-icon green">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
-            </span>
-            处方审核
-            {pendingCount > 0 && <span className="ws-badge">{pendingCount}</span>}
-          </div>
-
-          {/* Agent 工作流 */}
-          <div className="ws-card" style={{ flex: 'none' }}>
-            <div className="ws-card-head">
-              <h3>
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
-                </svg>
-                Agent 智能审方
-              </h3>
-            </div>
-            <div className="ws-card-body" style={{ padding: '6px 10px' }}>
-              {/* Step 1: Input */}
-              <div className="ws-sub-title" style={{ fontSize: 10, marginTop: 0 }}>① 诊疗信息输入</div>
-              <div style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 2, padding: '3px 6px', background: 'var(--bg-page)', borderRadius: 4 }}>
-                <strong style={{ color: 'var(--text-primary)' }}>李某</strong> · 男 58岁 · 2026-07-14<br />
-                主诉：反复头晕头痛3年，加重1周 · 血压 158/96 mmHg<br />
-                既往史：高血压病史5年 · 过敏史：无
-              </div>
-
-              {/* Step 2: Keywords */}
-              <div className="ws-sub-title" style={{ fontSize: 10 }}>② 关键词提取</div>
-              <div className="ws-tags" style={{ marginBottom: 2 }}>
-                <span className="ws-tag" style={{ background: '#E8F4FD', borderColor: '#91CAFF' }}>高血压</span>
-                <span className="ws-tag" style={{ background: '#F0EBFF', borderColor: '#B89EFF' }}>肝阳上亢</span>
-                <span className="ws-tag" style={{ background: '#FFF7E6', borderColor: '#FFD591' }}>头晕</span>
-                <span className="ws-tag" style={{ background: '#FFF0F0', borderColor: '#FFA39E' }}>头痛</span>
-                <span className="ws-tag" style={{ background: '#F0FFF4', borderColor: '#95DE64' }}>失眠</span>
-                <span className="ws-tag" style={{ background: '#E6FFFB', borderColor: '#87E8DE' }}>口苦咽干</span>
-              </div>
-
-              {/* Step 3: Agent Process */}
-              <div className="ws-sub-title" style={{ fontSize: 10 }}>③ Agent 审方分析</div>
-              <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
-                {[
-                  { label: '证型匹配', status: 'done', detail: '肝阳上亢证（匹配度 92%）' },
-                  { label: '方剂推荐', status: 'done', detail: '天麻钩藤饮加减' },
-                  { label: '配伍检查', status: 'done', detail: '未发现配伍禁忌' },
-                  { label: '剂量校验', status: 'done', detail: '所有药材在安全范围' },
-                  { label: '禁忌审查', status: 'done', detail: '无禁忌证冲突' },
-                ].map((step, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0' }}>
-                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#52C41A" strokeWidth="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{step.label}</span>
-                    <span style={{ color: 'var(--text-muted)' }}>— {step.detail}</span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Step 4: Output */}
-              <div className="ws-sub-title" style={{ fontSize: 10 }}>④ 审方结果输出</div>
-              <div style={{ fontSize: 10, lineHeight: 1.5, padding: '4px 6px', background: '#F0FFF4', border: '1px solid #95DE64', borderRadius: 4, color: 'var(--text-primary)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
-                  <strong style={{ fontSize: 11, color: '#389E0D' }}>✓ 审方通过</strong>
-                  <span style={{ fontSize: 9, color: '#389E0D', background: '#D9F7BE', padding: '0 5px', borderRadius: 3 }}>低风险 12</span>
-                </div>
-                <div style={{ color: 'var(--text-secondary)' }}>
-                  推荐处方：天麻 12g · 钩藤 15g · 石决明 30g · 黄芩 9g · 牛膝 12g · 杜仲 12g · 栀子 9g · 茯神 15g
-                </div>
-                <div style={{ color: 'var(--text-secondary)', marginTop: 1 }}>
-                  煎服：每日1剂，水煎400ml，分早晚两次温服
                 </div>
               </div>
-            </div>
-          </div>
 
-          <div className="ws-card">
-            <div className="ws-card-body" style={{ padding: 0, overflowY: 'auto' }}>
-              <div className="ws-rx-list">
-                {prescriptions.map(rx => (
-                  <div key={rx.id} className={`ws-rx-card ${selectedRx?.id === rx.id ? 'selected' : ''}`} onClick={() => { setSelectedRx(selectedRx?.id === rx.id ? null : rx); setExpandedRxId(expandedRxId === rx.id ? null : rx.id) }}>
-                    <div className="ws-rx-head">
-                      <div className="ws-rx-left">
-                        <span className={`ws-rx-dot ${rx.riskLevel}`} />
-                        <div>
-                          <div className="ws-rx-patient">{rx.patientName} · {rx.patientGender} {rx.patientAge}岁</div>
-                          <div className="ws-rx-diag">{rx.diagnosis} / {rx.syndrome}</div>
-                        </div>
-                      </div>
-                      <div className="ws-rx-right">
-                        <span className={`ws-risk-tag ${rx.riskLevel}`}>{rx.riskLevel === 'high' ? '高' : rx.riskLevel === 'medium' ? '中' : '低'} {rx.riskScore}</span>
-                        <span className={`ws-status ${rx.status}`}>{rx.status === 'pending' ? '待审' : rx.status === 'approved' ? '通过' : '驳回'}</span>
-                      </div>
+              {/* 处方明细 */}
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>处方明细</h3><span className="ws-count">{selectedHerbs.length}味</span></div>
+                <div className="ws-card-body">
+                  {selectedHerbs.length === 0 ? (
+                    <div className="ws-empty">请选择方剂或从药库添加</div>
+                  ) : (
+                    <div className="ws-herbs-list">
+                      {selectedHerbs.map(herb => {
+                        const over = herb.currentDosage > herb.maxDosage
+                        const under = herb.currentDosage < herb.minDosage && herb.currentDosage > 0
+                        return (
+                          <div key={herb.id} className={`ws-herb ${over || under ? 'warn' : ''}`}>
+                            <div className="ws-herb-info">
+                              <span className="ws-herb-name">{herb.name}{herb.toxic && <span className="ws-toxic">毒</span>}</span>
+                              <span className="ws-herb-meta">{herb.nature}·{herb.taste}·归{herb.meridian}</span>
+                            </div>
+                            <div className="ws-herb-dosage">
+                              <span className="ws-range">{herb.minDosage}-{herb.maxDosage}{herb.unit}</span>
+                              <div className="ws-dosage-ctrl">
+                                <button onClick={() => updateDosage(herb.id, Math.max(0, herb.currentDosage - 1))}>−</button>
+                                <input type="number" className={over ? 'over' : under ? 'under' : ''} value={herb.currentDosage} onChange={e => updateDosage(herb.id, parseFloat(e.target.value) || 0)} />
+                                <button onClick={() => updateDosage(herb.id, herb.currentDosage + 1)}>+</button>
+                                <span>{herb.unit}</span>
+                              </div>
+                            </div>
+                            <button className="ws-herb-x" onClick={() => removeHerb(herb.id)}>×</button>
+                          </div>
+                        )
+                      })}
                     </div>
-                    {expandedRxId === rx.id && (
-                      <div className="ws-rx-body">
-                        <div className="ws-tags">{rx.herbs.map(h => <span key={h} className="ws-tag">{h}</span>)}</div>
-                        {rx.risks.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">风险项</div><ul className="ws-risk-list">{rx.risks.map((r, i) => <li key={i} className="danger">{r}</li>)}</ul></div>}
-                        {rx.suggestions.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">建议</div><ul className="ws-risk-list">{rx.suggestions.map((s, i) => <li key={i} className="success">{s}</li>)}</ul></div>}
-                        {rx.status === 'pending' && (
-                          <div className="ws-btn-row" style={{ marginTop: 8 }}>
-                            <button className="btn btn-ghost btn-sm">退回</button>
-                            <button className="btn btn-danger btn-sm">驳回</button>
-                            <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
+                  )}
+                </div>
+              </div>
+
+              {/* 药库检索 */}
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>药库检索</h3></div>
+                <div className="ws-card-body">
+                  <input className="ws-search" placeholder="搜索药名、类别、功效..." value={searchHerb} onChange={e => setSearchHerb(e.target.value)} />
+                  <div className="ws-lib-list">
+                    {filteredHerbs.map(h => (
+                      <div key={h.id} className={`ws-lib-item ${selectedHerbs.some(sh => sh.id === h.id) ? 'selected' : ''}`} onClick={() => addHerb(h)}>
+                        <div><span className="ws-lib-name">{h.name}</span><span className="ws-lib-meta">{h.nature}，{h.taste}</span></div>
+                        <span className="ws-lib-dose">{h.minDosage}-{h.maxDosage}{h.unit}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 医嘱备注 */}
+              <div className="ws-card">
+                <div className="ws-card-head"><h3>医嘱备注</h3></div>
+                <div className="ws-card-body">
+                  <textarea className="ws-notes" placeholder="用法用量、煎服方法、忌口等..." value={notes} onChange={e => setNotes(e.target.value)} rows={2} />
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* ===== 步骤2：处方审核 ===== */}
+          {currentStep === 2 && (
+            <>
+              {/* Agent 工作流 */}
+              <div className="ws-card" style={{ flex: 'none' }}>
+                <div className="ws-card-head">
+                  <h3>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>
+                    </svg>
+                    Agent 智能审方
+                  </h3>
+                </div>
+                <div className="ws-card-body" style={{ padding: '6px 10px' }}>
+                  <div className="ws-sub-title" style={{ fontSize: 10, marginTop: 0 }}>① 诊疗信息输入</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', lineHeight: 1.5, marginBottom: 2, padding: '3px 6px', background: 'var(--bg-page)', borderRadius: 4 }}>
+                    <strong style={{ color: 'var(--text-primary)' }}>李某</strong> · 男 58岁 · 2026-07-14<br />
+                    主诉：反复头晕头痛3年，加重1周 · 血压 158/96 mmHg<br />
+                    既往史：高血压病史5年 · 过敏史：无
+                  </div>
+
+                  <div className="ws-sub-title" style={{ fontSize: 10 }}>② 关键词提取</div>
+                  <div className="ws-tags" style={{ marginBottom: 2 }}>
+                    <span className="ws-tag" style={{ background: '#E8F4FD', borderColor: '#91CAFF' }}>高血压</span>
+                    <span className="ws-tag" style={{ background: '#F0EBFF', borderColor: '#B89EFF' }}>肝阳上亢</span>
+                    <span className="ws-tag" style={{ background: '#FFF7E6', borderColor: '#FFD591' }}>头晕</span>
+                    <span className="ws-tag" style={{ background: '#FFF0F0', borderColor: '#FFA39E' }}>头痛</span>
+                    <span className="ws-tag" style={{ background: '#F0FFF4', borderColor: '#95DE64' }}>失眠</span>
+                    <span className="ws-tag" style={{ background: '#E6FFFB', borderColor: '#87E8DE' }}>口苦咽干</span>
+                  </div>
+
+                  <div className="ws-sub-title" style={{ fontSize: 10 }}>③ Agent 审方分析</div>
+                  <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginBottom: 2 }}>
+                    {[
+                      { label: '证型匹配', status: 'done', detail: '肝阳上亢证（匹配度 92%）' },
+                      { label: '方剂推荐', status: 'done', detail: '天麻钩藤饮加减' },
+                      { label: '配伍检查', status: 'done', detail: '未发现配伍禁忌' },
+                      { label: '剂量校验', status: 'done', detail: '所有药材在安全范围' },
+                      { label: '禁忌审查', status: 'done', detail: '无禁忌证冲突' },
+                    ].map((step, i) => (
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '2px 0' }}>
+                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#52C41A" strokeWidth="3">
+                          <polyline points="20 6 9 17 4 12" />
+                        </svg>
+                        <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>{step.label}</span>
+                        <span style={{ color: 'var(--text-muted)' }}>— {step.detail}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="ws-sub-title" style={{ fontSize: 10 }}>④ 审方结果输出</div>
+                  <div style={{ fontSize: 10, lineHeight: 1.5, padding: '4px 6px', background: '#F0FFF4', border: '1px solid #95DE64', borderRadius: 4, color: 'var(--text-primary)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                      <strong style={{ fontSize: 11, color: '#389E0D' }}>✓ 审方通过</strong>
+                      <span style={{ fontSize: 9, color: '#389E0D', background: '#D9F7BE', padding: '0 5px', borderRadius: 3 }}>低风险 12</span>
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)' }}>
+                      推荐处方：天麻 12g · 钩藤 15g · 石决明 30g · 黄芩 9g · 牛膝 12g · 杜仲 12g · 栀子 9g · 茯神 15g
+                    </div>
+                    <div style={{ color: 'var(--text-secondary)', marginTop: 1 }}>
+                      煎服：每日1剂，水煎400ml，分早晚两次温服
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 处方列表 */}
+              <div className="ws-card" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="ws-card-head"><h3>处方列表</h3><span className="ws-count">{prescriptions.length}张</span></div>
+                <div className="ws-card-body" style={{ padding: 0, overflowY: 'auto', flex: 1 }}>
+                  <div className="ws-rx-list">
+                    {prescriptions.map(rx => (
+                      <div key={rx.id} className={`ws-rx-card ${selectedRx?.id === rx.id ? 'selected' : ''}`} onClick={() => { setSelectedRx(selectedRx?.id === rx.id ? null : rx); setExpandedRxId(expandedRxId === rx.id ? null : rx.id) }}>
+                        <div className="ws-rx-head">
+                          <div className="ws-rx-left">
+                            <span className={`ws-rx-dot ${rx.riskLevel}`} />
+                            <div>
+                              <div className="ws-rx-patient">{rx.patientName} · {rx.patientGender} {rx.patientAge}岁</div>
+                              <div className="ws-rx-diag">{rx.diagnosis} / {rx.syndrome}</div>
+                            </div>
+                          </div>
+                          <div className="ws-rx-right">
+                            <span className={`ws-risk-tag ${rx.riskLevel}`}>{rx.riskLevel === 'high' ? '高' : rx.riskLevel === 'medium' ? '中' : '低'} {rx.riskScore}</span>
+                            <span className={`ws-status ${rx.status}`}>{rx.status === 'pending' ? '待审' : rx.status === 'approved' ? '通过' : '驳回'}</span>
+                          </div>
+                        </div>
+                        {expandedRxId === rx.id && (
+                          <div className="ws-rx-body">
+                            <div className="ws-tags">{rx.herbs.map(h => <span key={h} className="ws-tag">{h}</span>)}</div>
+                            {rx.risks.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">风险项</div><ul className="ws-risk-list">{rx.risks.map((r, i) => <li key={i} className="danger">{r}</li>)}</ul></div>}
+                            {rx.suggestions.length > 0 && <div className="ws-rx-section"><div className="ws-sub-title">建议</div><ul className="ws-risk-list">{rx.suggestions.map((s, i) => <li key={i} className="success">{s}</li>)}</ul></div>}
+                            {rx.status === 'pending' && (
+                              <div className="ws-btn-row" style={{ marginTop: 8 }}>
+                                <button className="btn btn-ghost btn-sm">退回</button>
+                                <button className="btn btn-danger btn-sm">驳回</button>
+                                <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>通过</button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
+                    ))}
                   </div>
-                ))}
+                </div>
               </div>
+            </>
+          )}
+
+          {/* 导航按钮 */}
+          <div className="ws-btn-row" style={{ justifyContent: 'space-between', marginTop: 8 }}>
+            <div>
+              {currentStep > 0 && (
+                <button className="btn btn-outline btn-sm" onClick={() => setCurrentStep(prev => prev - 1)}>← 上一步</button>
+              )}
+            </div>
+            <div>
+              {currentStep < wizardSteps.length - 1 ? (
+                <button className="btn btn-primary btn-sm" onClick={() => setCurrentStep(prev => prev + 1)}>下一步 →</button>
+              ) : (
+                <button className="btn btn-primary btn-sm" onClick={() => navigate('/emr')}>提交审方</button>
+              )}
             </div>
           </div>
         </div>
