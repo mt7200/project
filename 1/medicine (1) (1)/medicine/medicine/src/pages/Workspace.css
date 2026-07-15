@@ -232,6 +232,69 @@
   margin-top: 0;
 }
 
+/* Picker popup (shared by pulse, tongue, inspection, inquiry) */
+.ws-picker-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  padding: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.ws-pulse-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ws-pulse-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.ws-pulse-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+}
+
+.ws-pulse-tag {
+  padding: 2px 7px;
+  border-radius: 100px;
+  font-size: 10px;
+  background: var(--bg-page);
+  color: var(--text-primary);
+  border: 1px solid var(--border-light);
+  cursor: pointer;
+  transition: all 0.15s;
+  user-select: none;
+}
+
+.ws-pulse-tag:hover {
+  background: var(--primary-bg);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.ws-chief-complaint-picker .ws-pulse-tags {
+  gap: 2px;
+}
+
+.ws-chief-complaint-picker .ws-pulse-tag {
+  padding: 1px 5px;
+  font-size: 10px;
+}
+
 /* Diagnosis results */
 .ws-diag-results {
   display: flex;

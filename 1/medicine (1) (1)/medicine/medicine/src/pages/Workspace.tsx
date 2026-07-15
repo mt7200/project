@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './Workspace.css'
 
@@ -6,7 +6,8 @@ import './Workspace.css'
 interface PatientForm {
   name: string; gender: string; age: string; phone: string; idCard: string; birthDate: string
   occupation: string; ethnicity: string; maritalStatus: string; address: string
-  chiefComplaint: string; presentIllness: string; pastHistory: string; familyHistory: string; allergyHistory: string
+  chiefComplaint: string; presentIllness: string; pastHistory: string; familyHistory: string; allergyHistory: string; personalHistory: string
+  diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string
 }
 interface SymptomForm {
   pulseLeft: string; pulseRight: string; pulseDescription: string
@@ -32,10 +33,17 @@ interface Prescription {
 
 /* ============ Data ============ */
 const diagnosisResults: DiagnosisResult[] = [
-  { pattern: '肝阳上亢', confidence: 92, description: '肝阳偏亢，上扰头目，导致头晕头痛；肝肾阴虚，腰膝失养，故腰膝酸软。', symptoms: ['眩晕', '头痛', '失眠多梦', '腰膝酸软', '口苦咽干'] },
-  { pattern: '阴虚阳亢', confidence: 78, description: '阴液亏虚，阳气偏亢，虚热内生，上扰清窍。', symptoms: ['头晕耳鸣', '潮热盗汗', '五心烦热'] },
-  { pattern: '肝郁气滞', confidence: 65, description: '肝气郁结，气机不畅，情志不舒。', symptoms: ['胁肋胀痛', '胸闷善太息', '抑郁多疑'] },
+  { pattern: '肝阳上亢证', confidence: 92, description: '肝阳偏亢，上扰头目，导致头晕头痛；肝肾阴虚，腰膝失养，故腰膝酸软。', symptoms: ['眩晕', '头痛', '失眠多梦', '腰膝酸软', '口苦咽干'] },
+  { pattern: '阴虚阳亢证', confidence: 78, description: '阴液亏虚，阳气偏亢，虚热内生，上扰清窍。', symptoms: ['头晕耳鸣', '潮热盗汗', '五心烦热'] },
+  { pattern: '肝郁气滞证', confidence: 65, description: '肝气郁结，气机不畅，情志不舒。', symptoms: ['胁肋胀痛', '胸闷善太息', '抑郁多疑'] },
 ]
+
+// Mock diagnosis mapping: pattern -> { diagnosis, differentiation, treatmentMethod, prescription }
+const patternToDiagnosis: Record<string, { diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }> = {
+  '肝阳上亢证': { diagnosis: '高血压病', differentiation: '肝阳上亢证', treatmentMethod: '平肝潜阳，滋养肝肾', prescription: '天麻钩藤饮加减' },
+  '阴虚阳亢证': { diagnosis: '高血压病', differentiation: '阴虚阳亢证', treatmentMethod: '滋阴潜阳', prescription: '镇肝熄风汤加减' },
+  '肝郁气滞证': { diagnosis: '郁证', differentiation: '肝郁气滞证', treatmentMethod: '疏肝解郁，理气畅中', prescription: '柴胡疏肝散加减' },
+}
 
 const herbDatabase: Herb[] = [
   { id: 1, name: '柴胡', category: '解表药', nature: '微寒', taste: '辛苦', meridian: '肝、胆', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['黄芩', '半夏'], functions: ['疏散退热', '疏肝解郁'] },
@@ -104,13 +112,60 @@ export default function Workspace() {
   const [form, setForm] = useState<PatientForm>({
     name: '', gender: '', age: '', phone: '', idCard: '', birthDate: '',
     occupation: '', ethnicity: '汉族', maritalStatus: '', address: '',
-    chiefComplaint: '', presentIllness: '', pastHistory: '', familyHistory: '', allergyHistory: '',
+    chiefComplaint: '', presentIllness: '', pastHistory: '', familyHistory: '', allergyHistory: '', personalHistory: '',
+    diagnosis: '', differentiation: '', treatmentMethod: '', prescription: '',
   })
   const [symptoms, setSymptoms] = useState<SymptomForm>({
     pulseLeft: '', pulseRight: '', pulseDescription: '', tongueColor: '', tongueShape: '',
     tongueCoating: '', tongueTexture: '', facialColor: '', expression: '', mentalState: '',
     sleepQuality: '', appetite: '', thirst: '', taste: '', bowelMovement: '', urineColor: '',
   })
+  const [showPulsePicker, setShowPulsePicker] = useState(false)
+  const [showTonguePicker, setShowTonguePicker] = useState(false)
+  const [showInspectionPicker, setShowInspectionPicker] = useState(false)
+  const [showInquiryPicker, setShowInquiryPicker] = useState(false)
+  const [showChiefComplaintPicker, setShowChiefComplaintPicker] = useState(false)
+  const [showPresentIllnessPicker, setShowPresentIllnessPicker] = useState(false)
+  const [showPastHistoryPicker, setShowPastHistoryPicker] = useState(false)
+  const [showAllergyPicker, setShowAllergyPicker] = useState(false)
+  const [showPersonalHistoryPicker, setShowPersonalHistoryPicker] = useState(false)
+  const chiefComplaintRef = useRef<HTMLDivElement>(null)
+  const presentIllnessRef = useRef<HTMLDivElement>(null)
+  const pastHistoryRef = useRef<HTMLDivElement>(null)
+  const allergyRef = useRef<HTMLDivElement>(null)
+  const personalHistoryRef = useRef<HTMLDivElement>(null)
+
+  // Close pickers when clicking outside
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      // Close pickers when clicking outside their containers
+      if (chiefComplaintRef.current && !chiefComplaintRef.current.contains(target)) {
+        setShowChiefComplaintPicker(false)
+      }
+      if (presentIllnessRef.current && !presentIllnessRef.current.contains(target)) {
+        setShowPresentIllnessPicker(false)
+      }
+      if (pastHistoryRef.current && !pastHistoryRef.current.contains(target)) {
+        setShowPastHistoryPicker(false)
+      }
+      if (allergyRef.current && !allergyRef.current.contains(target)) {
+        setShowAllergyPicker(false)
+      }
+      if (personalHistoryRef.current && !personalHistoryRef.current.contains(target)) {
+        setShowPersonalHistoryPicker(false)
+      }
+      // Close other pickers when clicking outside
+      if (!target.closest('.ws-picker-panel') && !target.closest('.ws-field input')) {
+        setShowPulsePicker(false)
+        setShowTonguePicker(false)
+        setShowInspectionPicker(false)
+        setShowInquiryPicker(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
   const [selectedPattern, setSelectedPattern] = useState('')
   const [customDiagnoses, setCustomDiagnoses] = useState<CustomDiagnosis[]>([])
   const [customPattern, setCustomPattern] = useState('')
@@ -143,6 +198,15 @@ export default function Workspace() {
     setCustomDescription(result.description)
     setCustomSymptoms(result.symptoms.join('、'))
     setSelectedPattern(result.pattern)
+    // Auto-fill diagnosis and differentiation fields with mock data
+    const mockData = patternToDiagnosis[result.pattern]
+    if (mockData) {
+      setForm(prev => ({
+        ...prev,
+        diagnosis: mockData.diagnosis,
+        differentiation: mockData.differentiation,
+      }))
+    }
   }
   const handleAddCustomDiagnosis = () => {
     if (!customPattern.trim()) return
@@ -274,11 +338,157 @@ export default function Workspace() {
                 <div className="ws-field"><label>年龄</label><input type="number" name="age" value={form.age} onChange={handleChange} placeholder="岁" /></div>
                 <div className="ws-field"><label>电话</label><input name="phone" value={form.phone} onChange={handleChange} placeholder="手机号" /></div>
               </div>
-              <div className="ws-field full"><label>主诉 <span className="req">*</span></label><textarea name="chiefComplaint" value={form.chiefComplaint} onChange={handleChange} placeholder="主要症状及持续时间" rows={2} /></div>
-              <div className="ws-field full"><label>现病史</label><textarea name="presentIllness" value={form.presentIllness} onChange={handleChange} placeholder="发病经过" rows={2} /></div>
+              <div className="ws-field full ws-chief-complaint-field" style={{position:'relative'}} ref={chiefComplaintRef}>
+                <label>主诉 <span className="req">*</span></label>
+                <textarea
+                  name="chiefComplaint"
+                  value={form.chiefComplaint}
+                  onChange={handleChange}
+                  onFocus={() => setShowChiefComplaintPicker(true)}
+                  placeholder="点击选择症状标签或手动输入"
+                  rows={2}
+                  style={{cursor:'pointer'}}
+                />
+                {showChiefComplaintPicker && (
+                  <div className="ws-picker-panel ws-chief-complaint-picker">
+                    <div className="ws-pulse-tags">
+                      {['咳嗽','干咳','咳痰','夜咳','晨咳','咽干','咽痒','咽痛','痰中带血','声音嘶哑','咽部异物感','反复感冒','发热','喷嚏','流涕','鼻塞','头痛','头晕','耳鸣','汗多','盗汗','自汗','头汗','易汗出','胃胀','胃痛','胃不适','腹胀','腹痛','腹泻','恶心','呕吐','反酸','嗳气','烧心','纳差','便秘','便','便血','黑便','大便干','大便黏','五更泻','腹痛欲便','里急后重','排便不爽','溏结不调','胸闷','胸痛','心悸','气短','气喘','气促','眠差','眠浅','多梦','易醒','早醒','入睡困难','嗜睡','尿频','尿急','尿痛','尿不尽','尿灼热','尿分叉','夜尿多','尿浊','尿血','水肿','阳痿','遗精','早泄','肩痛','胁痛','背痛','腰痛','颈椎痛','关节痛','关节僵硬','四肢麻木','半身麻木','四肢无力','偏瘫','拘挛','眼干','口干','口苦','牙痛','齿衄','口疮','皮疹','斑疹','丘疹','风团','皮肤红斑','皮肤瘙痒','痛经','闭经','崩漏','月经量多','月经量少','月经提前','月经延后','经期错乱','带下量多','带下量少','带下异味','黄带','偶尔','1天','2天','3天','4天','5天','1周','2周','3周','1个月','2个月','3个月','半年','1年'].map(v => (
+                        <span key={'cc-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.chiefComplaint; setForm(prev => ({ ...prev, chiefComplaint: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="ws-field full" style={{position:'relative'}} ref={presentIllnessRef}>
+                <label>现病史</label>
+                <textarea
+                  name="presentIllness"
+                  value={form.presentIllness}
+                  onChange={handleChange}
+                  onFocus={() => setShowPresentIllnessPicker(true)}
+                  placeholder="点击选择标签或手动输入"
+                  rows={2}
+                  style={{cursor:'pointer'}}
+                />
+                {showPresentIllnessPicker && (
+                  <div className="ws-picker-panel ws-chief-complaint-picker">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">诱因</span>
+                      <div className="ws-pulse-tags">
+                        {['无明显诱因','受凉','劳累','接触感冒患者','季节变化','淋雨'].map(v => (
+                          <span key={'pi-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.presentIllness; setForm(prev => ({ ...prev, presentIllness: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">特征</span>
+                      <div className="ws-pulse-tags">
+                        {['高热','低热','喷嚏频繁','喷嚏阵发性','发热反复'].map(v => (
+                          <span key={'pi-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.presentIllness; setForm(prev => ({ ...prev, presentIllness: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">影响</span>
+                      <div className="ws-pulse-tags">
+                        {['休息后缓解','受凉后加重','夜间加重','活动后加重','多饮水后缓解'].map(v => (
+                          <span key={'pi-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.presentIllness; setForm(prev => ({ ...prev, presentIllness: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">伴随</span>
+                      <div className="ws-pulse-tags">
+                        {['流涕','咽痛','咳嗽','头痛','肌肉酸痛'].map(v => (
+                          <span key={'pi-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.presentIllness; setForm(prev => ({ ...prev, presentIllness: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
               <div className="ws-form-grid">
-                <div className="ws-field"><label>既往病史</label><input name="pastHistory" value={form.pastHistory} onChange={handleChange} placeholder="慢性病、手术史" /></div>
-                <div className="ws-field"><label>过敏史</label><input name="allergyHistory" value={form.allergyHistory} onChange={handleChange} placeholder="药物/食物过敏" /></div>
+                <div className="ws-field" style={{position:'relative'}} ref={pastHistoryRef}>
+                  <label>既往病史</label>
+                  <input
+                    name="pastHistory"
+                    value={form.pastHistory}
+                    onChange={handleChange}
+                    onFocus={() => setShowPastHistoryPicker(true)}
+                    placeholder="点击选择或手动输入"
+                    style={{cursor:'pointer'}}
+                  />
+                  {showPastHistoryPicker && (
+                    <div className="ws-picker-panel ws-chief-complaint-picker">
+                      <div className="ws-pulse-section">
+                        <span className="ws-pulse-section-label">既往有</span>
+                        <div className="ws-pulse-tags">
+                          {['高血压','高血脂','心脏病','糖尿病','痛风','精神疾病','脑梗死','肝炎','胃炎','肺结核','哮喘','鼻炎','甲亢','血液病'].map(v => (
+                            <span key={'ph-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.pastHistory; setForm(prev => ({ ...prev, pastHistory: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="ws-field" style={{position:'relative'}} ref={allergyRef}>
+                  <label>过敏史</label>
+                  <input
+                    name="allergyHistory"
+                    value={form.allergyHistory}
+                    onChange={handleChange}
+                    onFocus={() => setShowAllergyPicker(true)}
+                    placeholder="点击选择或手动输入"
+                    style={{cursor:'pointer'}}
+                  />
+                  {showAllergyPicker && (
+                    <div className="ws-picker-panel ws-chief-complaint-picker">
+                      <div className="ws-pulse-tags">
+                        {['青霉素','链霉素','卡那霉素','林可霉素','左氧氟沙星','溴芬酸钠','阿托品','头孢类','磺胺类','酒精','碘伏','去痛片','扑热息痛','安痛定','安定','鲁米那','阿司匹林','普鲁卡因','花粉','霉菌','尘螨','毛皮屑','牛奶','鸡蛋','大豆','小麦','花生','鱼虾','坚果'].map(v => (
+                          <span key={'al-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.allergyHistory; setForm(prev => ({ ...prev, allergyHistory: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="ws-field full" style={{position:'relative'}} ref={personalHistoryRef}>
+                <label>个人史</label>
+                <textarea
+                  name="personalHistory"
+                  value={form.personalHistory}
+                  onChange={handleChange}
+                  onFocus={() => setShowPersonalHistoryPicker(true)}
+                  placeholder="点击选择标签或手动输入"
+                  rows={2}
+                  style={{cursor:'pointer'}}
+                />
+                {showPersonalHistoryPicker && (
+                  <div className="ws-picker-panel ws-chief-complaint-picker">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">吸烟/饮酒</span>
+                      <div className="ws-pulse-tags">
+                        {['吸烟','偶尔吸烟','长期吸烟','不饮酒','偶尔饮酒','长期饮酒'].map(v => (
+                          <span key={'ps-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.personalHistory; setForm(prev => ({ ...prev, personalHistory: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">婚育</span>
+                      <div className="ws-pulse-tags">
+                        {['未婚','已婚','未孕','备孕','怀孕','闭经','有早产史','有流产史','有痛经史'].map(v => (
+                          <span key={'ps-'+v} className="ws-pulse-tag" onClick={() => { const cur = form.personalHistory; setForm(prev => ({ ...prev, personalHistory: cur ? cur + ' ' + v : v })); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+              <div className="ws-form-grid">
+                <div className="ws-field"><label>诊断</label><input name="diagnosis" value={form.diagnosis} onChange={handleChange} placeholder="请输入诊断" /></div>
+                <div className="ws-field"><label>辩证</label><input name="differentiation" value={form.differentiation} onChange={handleChange} placeholder="请输入辩证" /></div>
+                <div className="ws-field"><label>治法</label><input name="treatmentMethod" value={form.treatmentMethod} onChange={handleChange} placeholder="请输入治法" /></div>
+                <div className="ws-field"><label>方药</label><input name="prescription" value={form.prescription} onChange={handleChange} placeholder="请输入方药" /></div>
               </div>
             </div>
           </div>
@@ -288,32 +498,192 @@ export default function Workspace() {
             <div className="ws-card-head"><h3>四诊采集</h3></div>
             <div className="ws-card-body">
               <div className="ws-sub-title">脉诊</div>
-              <div className="ws-form-grid">
-                <div className="ws-field"><label>左脉</label><select value={symptoms.pulseLeft} onChange={e => handleSymptomChange('pulseLeft', e.target.value)}><option value="">选择</option>{pulseOptions.map(v => <option key={v} value={v}>{v}</option>)}</select></div>
-                <div className="ws-field"><label>右脉</label><select value={symptoms.pulseRight} onChange={e => handleSymptomChange('pulseRight', e.target.value)}><option value="">选择</option>{pulseOptions.map(v => <option key={v} value={v}>{v}</option>)}</select></div>
+              <div className="ws-field full" style={{position:'relative'}}>
+                <input
+                  value={symptoms.pulseDescription}
+                  onChange={e => handleSymptomChange('pulseDescription', e.target.value)}
+                  onFocus={() => setShowPulsePicker(true)}
+                  placeholder="点击选择或输入脉象"
+                  style={{cursor:'pointer'}}
+                />
+                {showPulsePicker && (
+                  <div className="ws-picker-panel">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">左脉</span>
+                      <div className="ws-pulse-tags">
+                        {pulseOptions.map(v => (
+                          <span key={'l-'+v} className="ws-pulse-tag" onClick={() => {
+                            const cur = symptoms.pulseDescription;
+                            handleSymptomChange('pulseDescription', cur ? cur + ' ' + v : v);
+                          }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">右脉</span>
+                      <div className="ws-pulse-tags">
+                        {pulseOptions.map(v => (
+                          <span key={'r-'+v} className="ws-pulse-tag" onClick={() => {
+                            const cur = symptoms.pulseDescription;
+                            handleSymptomChange('pulseDescription', cur ? cur + ' ' + v : v);
+                          }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">脉象描述</span>
+                      <div className="ws-pulse-tags">
+                        {['弦细','滑数','沉迟','浮紧','细弱','洪大','濡缓','涩滞','虚浮','实有力'].map(v => (
+                          <span key={'d-'+v} className="ws-pulse-tag" onClick={() => {
+                            const cur = symptoms.pulseDescription;
+                            handleSymptomChange('pulseDescription', cur ? cur + ' ' + v : v);
+                          }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div className="ws-field full"><label>脉象描述</label><input value={symptoms.pulseDescription} onChange={e => handleSymptomChange('pulseDescription', e.target.value)} placeholder="补充描述" /></div>
 
               <div className="ws-sub-title">舌诊</div>
-              <div className="ws-form-grid">
-                <div className="ws-field"><label>舌质</label><select value={symptoms.tongueColor} onChange={e => handleSymptomChange('tongueColor', e.target.value)}><option value="">选择</option><option value="pale">淡</option><option value="red">红</option><option value="crimson">绛</option><option value="purple">紫</option></select></div>
-                <div className="ws-field"><label>舌苔</label><select value={symptoms.tongueCoating} onChange={e => handleSymptomChange('tongueCoating', e.target.value)}><option value="">选择</option><option value="thin-white">薄白</option><option value="thin-yellow">薄黄</option><option value="white-greasy">白腻</option><option value="yellow-greasy">黄腻</option><option value="less">少苔</option></select></div>
-                <div className="ws-field"><label>舌形</label><select value={symptoms.tongueShape} onChange={e => handleSymptomChange('tongueShape', e.target.value)}><option value="">选择</option><option value="swollen">胖大</option><option value="cracked">裂纹</option><option value="tooth-marked">齿痕</option></select></div>
-                <div className="ws-field"><label>纹理</label><select value={symptoms.tongueTexture} onChange={e => handleSymptomChange('tongueTexture', e.target.value)}><option value="">选择</option><option value="tender">嫩</option><option value="old">老</option><option value="moist">润</option><option value="dry">燥</option></select></div>
+              <div className="ws-field full" style={{position:'relative'}}>
+                <input
+                  value={symptoms.tongueColor + (symptoms.tongueCoating ? ' ' + symptoms.tongueCoating : '') + (symptoms.tongueShape ? ' ' + symptoms.tongueShape : '') + (symptoms.tongueTexture ? ' ' + symptoms.tongueTexture : '')}
+                  onChange={e => {
+                    const val = e.target.value
+                    handleSymptomChange('tongueColor', val)
+                    handleSymptomChange('tongueCoating', '')
+                    handleSymptomChange('tongueShape', '')
+                    handleSymptomChange('tongueTexture', '')
+                  }}
+                  onFocus={() => setShowTonguePicker(true)}
+                  placeholder="点击选择或输入舌象"
+                  style={{cursor:'pointer'}}
+                />
+                {showTonguePicker && (
+                  <div className="ws-picker-panel">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">舌质</span>
+                      <div className="ws-pulse-tags">
+                        {['淡','红','绛','紫','青'].map(v => (
+                          <span key={'tc-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('tongueColor', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">舌苔</span>
+                      <div className="ws-pulse-tags">
+                        {['薄白','薄黄','白腻','黄腻','少苔','剥苔','厚苔'].map(v => (
+                          <span key={'tco-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('tongueCoating', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">舌形</span>
+                      <div className="ws-pulse-tags">
+                        {['胖大','肿胀','瘦薄','裂纹','齿痕'].map(v => (
+                          <span key={'ts-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('tongueShape', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">纹理</span>
+                      <div className="ws-pulse-tags">
+                        {['嫩','老','润','燥'].map(v => (
+                          <span key={'tt-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('tongueTexture', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="ws-sub-title">望诊</div>
-              <div className="ws-form-grid">
-                <div className="ws-field"><label>面色</label><select value={symptoms.facialColor} onChange={e => handleSymptomChange('facialColor', e.target.value)}><option value="">选择</option><option value="pale">苍白</option><option value="flushed">潮红</option><option value="sallow">萎黄</option><option value="dark">暗黑</option></select></div>
-                <div className="ws-field"><label>神态</label><select value={symptoms.expression} onChange={e => handleSymptomChange('expression', e.target.value)}><option value="">选择</option><option value="alert">有神</option><option value="tired">少神</option><option value="apathetic">失神</option></select></div>
+              <div className="ws-field full" style={{position:'relative'}}>
+                <input
+                  value={symptoms.facialColor + (symptoms.expression ? ' ' + symptoms.expression : '')}
+                  onChange={e => {
+                    const val = e.target.value
+                    handleSymptomChange('facialColor', val)
+                    handleSymptomChange('expression', '')
+                  }}
+                  onFocus={() => setShowInspectionPicker(true)}
+                  placeholder="点击选择或输入望诊信息"
+                  style={{cursor:'pointer'}}
+                />
+                {showInspectionPicker && (
+                  <div className="ws-picker-panel">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">面色</span>
+                      <div className="ws-pulse-tags">
+                        {['苍白','潮红','萎黄','暗黑','正常'].map(v => (
+                          <span key={'fc-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('facialColor', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">神态</span>
+                      <div className="ws-pulse-tags">
+                        {['有神','少神','失神','烦躁','抑郁'].map(v => (
+                          <span key={'ex-'+v} className="ws-pulse-tag" onClick={() => handleSymptomChange('expression', v)}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="ws-sub-title">问诊</div>
-              <div className="ws-form-grid">
-                <div className="ws-field"><label>睡眠</label><select value={symptoms.sleepQuality} onChange={e => handleSymptomChange('sleepQuality', e.target.value)}><option value="">选择</option><option value="good">正常</option><option value="insomnia">失眠</option><option value="dreamy">多梦</option></select></div>
-                <div className="ws-field"><label>食欲</label><select value={symptoms.appetite} onChange={e => handleSymptomChange('appetite', e.target.value)}><option value="">选择</option><option value="good">正常</option><option value="poor">纳差</option></select></div>
-                <div className="ws-field"><label>口渴</label><select value={symptoms.thirst} onChange={e => handleSymptomChange('thirst', e.target.value)}><option value="">选择</option><option value="none">不渴</option><option value="thirsty">口渴</option><option value="bitter">口苦</option></select></div>
-                <div className="ws-field"><label>二便</label><select value={symptoms.bowelMovement} onChange={e => handleSymptomChange('bowelMovement', e.target.value)}><option value="">选择</option><option value="normal">正常</option><option value="constipation">便秘</option><option value="diarrhea">便溏</option></select></div>
+              <div className="ws-field full" style={{position:'relative'}}>
+                <input
+                  value={symptoms.sleepQuality + (symptoms.appetite ? ' ' + symptoms.appetite : '') + (symptoms.thirst ? ' ' + symptoms.thirst : '') + (symptoms.bowelMovement ? ' ' + symptoms.bowelMovement : '')}
+                  onChange={e => {
+                    const val = e.target.value
+                    handleSymptomChange('sleepQuality', val)
+                    handleSymptomChange('appetite', '')
+                    handleSymptomChange('thirst', '')
+                    handleSymptomChange('bowelMovement', '')
+                  }}
+                  onFocus={() => setShowInquiryPicker(true)}
+                  placeholder="点击选择或输入问诊信息"
+                  style={{cursor:'pointer'}}
+                />
+                {showInquiryPicker && (
+                  <div className="ws-picker-panel ws-chief-complaint-picker">
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">寒热</span>
+                      <div className="ws-pulse-tags">
+                        {['恶风','恶寒','怕冷','怕热','潮热','手足心热'].map(v => (
+                          <span key={'iq-'+v} className="ws-pulse-tag" onClick={() => { const cur = symptoms.sleepQuality; handleSymptomChange('sleepQuality', cur ? cur + ' ' + v : v); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">汗出</span>
+                      <div className="ws-pulse-tags">
+                        {['自汗','盗汗','汗多','冷汗','头汗','手足心汗'].map(v => (
+                          <span key={'iq-'+v} className="ws-pulse-tag" onClick={() => { const cur = symptoms.sleepQuality; handleSymptomChange('sleepQuality', cur ? cur + ' ' + v : v); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">饮食</span>
+                      <div className="ws-pulse-tags">
+                        {['纳可','纳差','口干','口苦','喜冷饮','喜热饮'].map(v => (
+                          <span key={'iq-'+v} className="ws-pulse-tag" onClick={() => { const cur = symptoms.appetite; handleSymptomChange('appetite', cur ? cur + ' ' + v : v); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="ws-pulse-section">
+                      <span className="ws-pulse-section-label">二便</span>
+                      <div className="ws-pulse-tags">
+                        {['小便正常','尿黄','多尿','少尿','大便正常','便溏','大便干','大便黏'].map(v => (
+                          <span key={'iq-'+v} className="ws-pulse-tag" onClick={() => { const cur = symptoms.bowelMovement; handleSymptomChange('bowelMovement', cur ? cur + ' ' + v : v); }}>{v}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -361,60 +731,28 @@ export default function Workspace() {
 
           {/* ===== 步骤0：辨证诊断 ===== */}
           {currentStep === 0 && (
-            <>
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>AI 推荐辨证</h3></div>
-                <div className="ws-card-body">
-                  <div className="ws-diag-results">
-                    {diagnosisResults.map(result => (
-                      <div key={result.pattern} className={`ws-diag-card ${selectedPattern === result.pattern ? 'selected' : ''}`} onClick={() => handleSelectPattern(result)}>
-                        <div className="ws-diag-head">
-                          <span className="ws-diag-name">{result.pattern}</span>
-                          <span className="ws-diag-conf">{result.confidence}%</span>
-                        </div>
-                        <div className="ws-diag-desc">{result.description}</div>
-                        <div className="ws-tags">{result.symptoms.map(s => <span key={s} className="ws-tag">{s}</span>)}</div>
+            <div className="ws-card">
+              <div className="ws-card-head"><h3>AI 推荐辨证</h3></div>
+              <div className="ws-card-body">
+                <div className="ws-diag-results">
+                  {diagnosisResults.map(result => (
+                    <div key={result.pattern} className={`ws-diag-card ${selectedPattern === result.pattern ? 'selected' : ''}`} onClick={() => handleSelectPattern(result)}>
+                      <div className="ws-diag-head">
+                        <span className="ws-diag-name">{result.pattern}</span>
+                        <span className="ws-diag-conf">{result.confidence}%</span>
                       </div>
-                    ))}
-                  </div>
-                  {selectedResult && (
-                    <div className="ws-ai-suggest">
-                      已选择：<strong>{selectedResult.pattern}</strong>（匹配度 {selectedResult.confidence}%）
+                      <div className="ws-diag-desc">{result.description}</div>
+                      <div className="ws-tags">{result.symptoms.map(s => <span key={s} className="ws-tag">{s}</span>)}</div>
                     </div>
-                  )}
+                  ))}
                 </div>
-              </div>
-
-              <div className="ws-card">
-                <div className="ws-card-head"><h3>自定义辨证</h3></div>
-                <div className="ws-card-body">
-                  <div className="ws-form-grid">
-                    <div className="ws-field"><label>证型名称</label><input value={customPattern} onChange={e => setCustomPattern(e.target.value)} placeholder="如：肝肾阴虚证" /></div>
+                {selectedResult && (
+                  <div className="ws-ai-suggest">
+                    已选择：<strong>{selectedResult.pattern}</strong>（匹配度 {selectedResult.confidence}%）— 已自动填充诊断、辨证
                   </div>
-                  <div className="ws-field full"><label>证型描述</label><textarea value={customDescription} onChange={e => setCustomDescription(e.target.value)} placeholder="描述辨证依据" rows={2} /></div>
-                  <div className="ws-field full"><label>临床表现</label><textarea value={customSymptoms} onChange={e => setCustomSymptoms(e.target.value)} placeholder="症状，逗号分隔" rows={2} /></div>
-                  <button className="btn btn-primary btn-sm" onClick={handleAddCustomDiagnosis}>添加辨证</button>
-                </div>
+                )}
               </div>
-
-              {customDiagnoses.length > 0 && (
-                <div className="ws-card">
-                  <div className="ws-card-head"><h3>已辨证列表</h3></div>
-                  <div className="ws-card-body">
-                    {customDiagnoses.map(d => (
-                      <div key={d.id} className="ws-chosen-diag">
-                        <div className="ws-chosen-head">
-                          <strong>{d.pattern}</strong>
-                          <button className="ws-btn-x" onClick={() => handleRemoveCustom(d.id)}>×</button>
-                        </div>
-                        <div style={{ fontSize: 10, color: 'var(--text-secondary)', marginTop: 1 }}>{d.description}</div>
-                        <div className="ws-tags">{d.symptoms.map(s => <span key={s} className="ws-tag">{s}</span>)}</div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
+            </div>
           )}
 
           {/* ===== 步骤1：智能开方 ===== */}

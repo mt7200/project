@@ -1,27 +1,26 @@
 .diagnosis-flow {
-  padding: 20px 24px;
+  padding: 8px 20px;
   max-width: 1400px;
   margin: 0 auto;
 }
 
-/* Header */
 .df-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 6px;
 }
 
 .df-header h1 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 600;
   color: var(--text-primary);
 }
 
 .df-header p {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-secondary);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .df-header-actions {
@@ -29,7 +28,6 @@
   gap: 10px;
 }
 
-/* Step Navigator */
 .df-step-nav {
   display: flex;
   align-items: center;
@@ -37,20 +35,20 @@
   background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 12px 24px;
-  margin-bottom: 20px;
+  padding: 5px 16px;
+  margin-bottom: 8px;
   box-shadow: var(--shadow-sm);
 }
 
 .df-step {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
+  gap: 5px;
+  padding: 4px 10px;
   border-radius: var(--radius);
   cursor: default;
   transition: var(--transition);
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-muted);
   font-weight: 500;
 }
@@ -71,7 +69,7 @@
 }
 
 .df-step-icon {
-  font-size: 18px;
+  font-size: 16px;
 }
 
 .df-step-label {
@@ -89,14 +87,13 @@
   color: var(--primary);
 }
 
-/* Card */
 .df-card {
   background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 24px;
+  padding: 12px 16px;
   box-shadow: var(--shadow-sm);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 .df-card-header {
@@ -115,33 +112,32 @@
 }
 
 .df-section-title {
-  font-size: 17px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 20px;
-  padding-bottom: 12px;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
   border-bottom: 1px solid var(--border-light);
 }
 
-/* Form */
 .df-form-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 6px;
 }
 
 .df-form-grid-2 {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .df-form-group {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 12px;
+  gap: 3px;
+  margin-bottom: 6px;
 }
 
 .df-form-group.full-width {
@@ -161,7 +157,7 @@
 .df-form-group input,
 .df-form-group select,
 .df-form-group textarea {
-  padding: 8px 12px;
+  padding: 5px 8px;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   font-size: 13px;
@@ -181,24 +177,23 @@
 
 .df-form-group textarea {
   resize: vertical;
-  min-height: 60px;
+  min-height: 38px;
 }
 
-/* Tabs */
 .df-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 20px;
+  margin-bottom: 8px;
   border-bottom: 2px solid var(--border-light);
 }
 
 .df-tab {
-  padding: 10px 20px;
+  padding: 6px 14px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 500;
   color: var(--text-secondary);
   cursor: pointer;
@@ -218,43 +213,51 @@
 }
 
 .df-tab-content {
-  padding: 4px 0;
+  padding: 2px 0;
 }
 
-/* Four Diagnosis Grid */
 .df-four-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
+  gap: 8px;
 }
 
 .df-four-section {
   background: var(--bg-page);
   border: 1px solid var(--border-light);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 10px;
 }
 
 .df-four-section h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 14px;
-  padding-bottom: 10px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
   border-bottom: 1px solid var(--border-light);
 }
 
-/* Step Actions */
+.df-four-section .df-form-group input,
+.df-four-section .df-form-group select {
+  padding: 6px 10px;
+}
+
+.df-four-section .df-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+  padding: 6px 10px;
+}
+
 .df-step-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 10px;
-  margin-top: 24px;
-  padding-top: 20px;
+  gap: 8px;
+  margin-top: 2px;
+  padding-top: 2px;
   border-top: 1px solid var(--border-light);
 }
 
-/* Diagnosis Layout */
 .df-diagnosis-layout {
   display: grid;
   grid-template-columns: 1fr 300px;
@@ -276,7 +279,6 @@
   top: 76px;
 }
 
-/* Result Cards */
 .df-result-cards {
   display: flex;
   flex-direction: column;
@@ -340,7 +342,6 @@
   color: var(--text-secondary);
 }
 
-/* AI Badge */
 .df-ai-badge {
   padding: 3px 10px;
   background: linear-gradient(135deg, #722ed1, #531d93);
@@ -350,7 +351,6 @@
   border-radius: 100px;
 }
 
-/* Custom Diagnosis */
 .df-custom-section {
   border-color: var(--success);
 }
@@ -421,7 +421,6 @@
   border-radius: 10px;
 }
 
-/* Add Form */
 .df-add-form {
   display: flex;
   flex-direction: column;
@@ -435,7 +434,6 @@
   margin-top: 4px;
 }
 
-/* AI Suggestion */
 .df-ai-suggestion {
   margin-top: 8px;
   padding: 10px 12px;
@@ -497,7 +495,6 @@
   color: white;
 }
 
-/* Detail Grid */
 .df-detail-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -522,7 +519,6 @@
   font-weight: 500;
 }
 
-/* Differentiation */
 .df-diff-section {
   padding-top: 16px;
   border-top: 1px solid var(--border-light);
@@ -585,20 +581,19 @@
   color: var(--text-muted);
 }
 
-/* Sidebar Cards */
 .df-sidebar-card {
   background: var(--bg-white);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 16px;
+  padding: 10px;
   box-shadow: var(--shadow-sm);
 }
 
 .df-sidebar-card h3 {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .df-summary-list {
@@ -611,7 +606,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  padding: 8px 10px;
+  padding: 6px 8px;
   background: var(--bg-page);
   border-radius: var(--radius-sm);
 }
@@ -649,15 +644,12 @@
   line-height: 1.5;
 }
 
-/* ===== Agent 工作流样式 ===== */
-
 .df-agent-workflow {
   display: flex;
   flex-direction: column;
   gap: 16px;
 }
 
-/* Agent Header Card */
 .df-agent-header-card {
   padding: 20px 24px;
 }
@@ -680,7 +672,6 @@
   gap: 8px;
 }
 
-/* Pipeline */
 .df-agent-pipeline {
   display: flex;
   align-items: center;
@@ -753,7 +744,6 @@
   50% { opacity: 0.5; transform: translateX(-50%) scale(1.5); }
 }
 
-/* Stage Cards */
 .df-agent-stage-card {
   position: relative;
   transition: var(--transition);
@@ -828,7 +818,6 @@
   50% { opacity: 0.4; }
 }
 
-/* Agent Input Box */
 .df-agent-input-box {
   background: var(--bg-page);
   border-radius: var(--radius);
@@ -863,7 +852,6 @@
   50% { opacity: 0; }
 }
 
-/* Keywords Box */
 .df-keywords-box {
   background: var(--bg-page);
   border-radius: var(--radius);
@@ -902,7 +890,6 @@
   to { opacity: 1; transform: scale(1); }
 }
 
-/* Agent Thinking */
 .df-agent-thinking {
   text-align: center;
   padding: 24px 16px;
@@ -950,7 +937,6 @@
   color: var(--text-muted);
 }
 
-/* Agent Done Message */
 .df-agent-done-msg {
   display: flex;
   align-items: center;
@@ -964,12 +950,10 @@
   font-weight: 500;
 }
 
-/* Output Card */
 .df-output-card {
   border-color: var(--success);
 }
 
-/* Add Form Title */
 .df-add-form-title {
   font-size: 15px;
   font-weight: 600;
@@ -979,12 +963,10 @@
   border-bottom: 1px solid var(--border-light);
 }
 
-/* Custom Section Inline */
 .df-custom-section-inline {
   margin-top: 4px;
 }
 
-/* Idle State */
 .df-agent-idle-card {
   padding: 40px 24px;
   text-align: center;
@@ -1057,7 +1039,6 @@
   font-weight: 700;
 }
 
-/* Agent Sidebar */
 .df-agent-sidebar {
   display: flex;
   flex-direction: column;
