@@ -19,6 +19,10 @@ interface PatientForm {
   pastHistory: string;
   familyHistory: string;
   allergyHistory: string;
+  diagnosis: string;
+  differentiation: string;
+  treatmentMethod: string;
+  prescription: string;
 }
 
 interface SymptomForm {
@@ -65,6 +69,10 @@ const PatientEntry: React.FC = () => {
     pastHistory: '',
     familyHistory: '',
     allergyHistory: '',
+    diagnosis: '',
+    differentiation: '',
+    treatmentMethod: '',
+    prescription: '',
   });
 
   const [symptoms, setSymptoms] = useState<SymptomForm>({
@@ -320,6 +328,50 @@ const PatientEntry: React.FC = () => {
                 placeholder="请输入过敏史，包括药物过敏、食物过敏、花粉过敏等"
                 rows={4}
               />
+            </div>
+
+            <h3>诊断信息</h3>
+            <div className="diagnosis-grid">
+              <div className="form-group">
+                <label>诊断</label>
+                <input
+                  type="text"
+                  name="diagnosis"
+                  value={form.diagnosis}
+                  onChange={handleChange}
+                  placeholder="请输入诊断"
+                />
+              </div>
+              <div className="form-group">
+                <label>辩证</label>
+                <input
+                  type="text"
+                  name="differentiation"
+                  value={form.differentiation}
+                  onChange={handleChange}
+                  placeholder="请输入辩证"
+                />
+              </div>
+              <div className="form-group">
+                <label>治法</label>
+                <input
+                  type="text"
+                  name="treatmentMethod"
+                  value={form.treatmentMethod}
+                  onChange={handleChange}
+                  placeholder="请输入治法"
+                />
+              </div>
+              <div className="form-group">
+                <label>方药</label>
+                <input
+                  type="text"
+                  name="prescription"
+                  value={form.prescription}
+                  onChange={handleChange}
+                  placeholder="请输入方药"
+                />
+              </div>
             </div>
 
             <div className="info-card">

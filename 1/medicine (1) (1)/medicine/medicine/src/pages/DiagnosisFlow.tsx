@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import './DiagnosisFlow.css'
 
 interface PatientForm {
@@ -59,6 +59,9 @@ interface CustomDiagnosis {
   description: string
   symptoms: string[]
 }
+
+// Agent工作流阶段
+type AgentStage = 'idle' | 'input' | 'preprocess' | 'diagnosing' | 'output'
 
 const diagnosisResults: DiagnosisResult[] = [
   {
@@ -126,6 +129,14 @@ const DiagnosisFlow: React.FC = () => {
   const [customDescription, setCustomDescription] = useState('')
   const [customSymptoms, setCustomSymptoms] = useState('')
 
+  // Agent工作流状态
+  const [agentStage, setAgentStage] = useState<AgentStage>('idle')
+  const [agentInput, setAgentInput] = useState('')
+  const [extractedKeywords, setExtractedKeywords] = useState<string[]>([])
+  const [agentOutput, setAgentOutput] = useState<DiagnosisResult[] | null>(null)
+  const [animatingKeywords, setAnimatingKeywords] = useState<number>(0)
+  const [typingIndex, setTypingIndex] = useState(0)
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setForm(prev => ({ ...prev, [name]: value }))
@@ -166,6 +177,72 @@ const DiagnosisFlow: React.FC = () => {
   }
 
   const selectedResult = diagnosisResults.find(r => r.pattern === selectedPattern)
+
+  // 构建诊疗信息字符串
+  const buildDiagnosisInput = useCallback(() => {
+    const parts: string[] = []
+    if (form.name) parts.push(`患者${form.name}，${form.gender === 'male' ? '男' : '女'}，${form.age}岁。`)
+    if (form.chiefComplaint) parts.push(`主诉：${form.chiefComplaint}。`)
+    if (form.presentIllness) parts.push(`现病史：${form.presentIllness}。`)
+    if (form.pastHistory) parts.push(`既往史：${form.pastHistory}。`)
+    if (symptoms.pulseLeft || symptoms.pulseRight) parts.push(`脉诊：左手${symptoms.pulseLeft || '未述'}，右手${symptoms.pulseRight || '未述'}。${symptoms.pulseDescription || ''}`)
+    if (symptoms.tongueColor || symptoms.tongueCoating) parts.push(`舌诊：舌质${symptoms.tongueColor || '未述'}，苔${symptoms.tongueCoating || '未述'}。`)
+    if (symptoms.facialColor) parts.push(`望诊：面色${symptoms.facialColor}。`)
+    if (symptoms.sleepQuality || symptoms.appetite || symptoms.thirst || symptoms.bowelMovement) {
+      const askParts: string[] = []
+      if (symptoms.sleepQuality) askParts.push(`睡眠${symptoms.sleepQuality}`)
+      if (symptoms.appetite) askParts.push(`食欲${symptoms.appetite}`)
+      if (symptoms.thirst) askParts.push(`口渴${symptoms.thirst}`)
+      if (symptoms.bowelMovement) askParts.push(`二便${symptoms.bowelMovement}`)
+      parts.push(`问诊：${askParts.join('，')}。`)
+    }
+    return parts.join('') || '暂无诊疗信息，请返回前两步填写患者信息。'
+  }, [form, symptoms])
+
+  // 模拟关键词提取
+  const mockKeywords = ['眩晕', '头痛', '失眠', '脉弦数', '舌红', '苔黄', '腰膝酸软', '口苦', '面色潮红']
+
+  // 启动Agent工作流
+  const startAgentWorkflow = () => {
+    const inputText = buildDiagnosisInput()
+    setAgentInput(inputText)
+    setAgentStage('input')
+    setExtractedKeywords([])
+    setAgentOutput(null)
+    setAnimatingKeywords(0)
+    setTypingIndex(0)
+  }
+
+  // 工作流动画效果
+  useEffect(() => {
+    if (agentStage === 'input') {
+      // 模拟输入文字打字效果
+      if (typingIndex < agentInput.length) {
+        const timer = setTimeout(() => setTypingIndex(prev => prev + 3), 30)
+        return () => clearTimeout(timer)
+      } else {
+        const timer = setTimeout(() => setAgentStage('preprocess'), 500)
+        return () => clearTimeout(timer)
+      }
+    }
+    if (agentStage === 'preprocess') {
+      // 逐步显示提取的关键词
+      if (animatingKeywords < mockKeywords.length) {
+        const timer = setTimeout(() => setAnimatingKeywords(prev => prev + 1), 300)
+        return () => clearTimeout(timer)
+      } else {
+        const timer = setTimeout(() => setAgentStage('diagnosing'), 600)
+        return () => clearTimeout(timer)
+      }
+    }
+    if (agentStage === 'diagnosing') {
+      const timer = setTimeout(() => {
+        setAgentOutput(diagnosisResults)
+        setAgentStage('output')
+      }, 2000)
+      return () => clearTimeout(timer)
+    }
+  }, [agentStage, typingIndex, agentInput, animatingKeywords, mockKeywords.length])
 
   const steps = [
     { num: 1, label: '患者录入', icon: '📋' },
@@ -461,18 +538,123 @@ const DiagnosisFlow: React.FC = () => {
         </div>
       )}
 
-      {/* Step 3: Diagnosis */}
+      {/* Step 3: Agent工作流辨证诊断 */}
       {currentStep === 3 && (
-        <div className="df-diagnosis-layout">
-          <div className="df-diagnosis-main">
-            {/* AI Diagnosis Results */}
-            <div className="df-card">
-              <div className="df-card-header">
-                <h2>AI 辨证结果</h2>
-                <span className="df-ai-badge">AI</span>
+        <div className="df-agent-workflow">
+          {/* 工作流标题与启动 */}
+          <div className="df-card df-agent-header-card">
+            <div className="df-agent-title-row">
+              <div>
+                <h2 className="df-section-title" style={{ marginBottom: 4, borderBottom: 'none', paddingBottom: 0 }}>辨证诊断 Agent</h2>
+                <p className="df-agent-subtitle">基于四诊信息的智能辨证分析工作流</p>
               </div>
+              <div className="df-agent-actions">
+                {agentStage === 'idle' && (
+                  <button className="btn btn-primary" onClick={startAgentWorkflow}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="5 3 19 12 5 21 5 3" /></svg>
+                    启动诊断
+                  </button>
+                )}
+                {agentStage === 'output' && (
+                  <button className="btn btn-outline" onClick={() => { setAgentStage('idle'); setAgentOutput(null); setTypingIndex(0); setAnimatingKeywords(0) }}>
+                    重新诊断
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* 工作流进度条 */}
+            <div className="df-agent-pipeline">
+              {(['input', 'preprocess', 'diagnosing', 'output'] as AgentStage[]).map((stage, idx) => {
+                const stageLabels: Record<AgentStage, string> = { idle: '', input: '信息输入', preprocess: '预处理·关键词提取', diagnosing: 'Agent诊断', output: '结果输出' }
+                const stageIcons: Record<AgentStage, string> = { idle: '', input: '📥', preprocess: '🔑', diagnosing: '🧠', output: '📊' }
+                const stageOrder = ['input', 'preprocess', 'diagnosing', 'output']
+                const currentIdx = stageOrder.indexOf(agentStage)
+                const isActive = idx <= currentIdx
+                const isCurrent = stage === agentStage
+                return (
+                  <React.Fragment key={stage}>
+                    {idx > 0 && <div className={`df-pipeline-connector ${isActive ? 'active' : ''}`} />}
+                    <div className={`df-pipeline-node ${isActive ? 'active' : ''} ${isCurrent ? 'current' : ''}`}>
+                      <span className="df-pipeline-icon">{stageIcons[stage]}</span>
+                      <span className="df-pipeline-label">{stageLabels[stage]}</span>
+                      {isCurrent && agentStage !== 'output' && <span className="df-pipeline-dot" />}
+                    </div>
+                  </React.Fragment>
+                )
+              })}
+            </div>
+          </div>
+
+          {/* 阶段1: 信息输入 */}
+          {(agentStage === 'input' || agentStage === 'preprocess' || agentStage === 'diagnosing' || agentStage === 'output') && (
+            <div className={`df-card df-agent-stage-card ${agentStage === 'input' ? 'df-stage-active' : 'df-stage-done'}`}>
+              <div className="df-stage-header">
+                <span className="df-stage-badge stage-input">📥 信息输入</span>
+                <span className="df-stage-status">{agentStage === 'input' ? '处理中...' : '已完成'}</span>
+              </div>
+              <div className="df-agent-input-box">
+                <div className="df-agent-input-label">诊疗信息字符串 → Agent输入</div>
+                <div className="df-agent-input-content">
+                  <span>{agentInput.slice(0, typingIndex)}</span>
+                  {agentStage === 'input' && typingIndex < agentInput.length && <span className="df-typing-cursor">|</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 阶段2: 预处理·关键词提取 */}
+          {(agentStage === 'preprocess' || agentStage === 'diagnosing' || agentStage === 'output') && (
+            <div className={`df-card df-agent-stage-card ${agentStage === 'preprocess' ? 'df-stage-active' : 'df-stage-done'}`}>
+              <div className="df-stage-header">
+                <span className="df-stage-badge stage-preprocess">🔑 预处理 · 关键词提取</span>
+                <span className="df-stage-status">{agentStage === 'preprocess' ? '提取中...' : '已完成'}</span>
+              </div>
+              <div className="df-keywords-box">
+                <div className="df-keywords-label">提取的辨证关键词</div>
+                <div className="df-keywords-list">
+                  {mockKeywords.slice(0, animatingKeywords).map((kw, i) => (
+                    <span key={i} className="df-keyword-tag keyword-animate">{kw}</span>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 阶段3: Agent诊断 */}
+          {(agentStage === 'diagnosing' || agentStage === 'output') && (
+            <div className={`df-card df-agent-stage-card ${agentStage === 'diagnosing' ? 'df-stage-active' : 'df-stage-done'}`}>
+              <div className="df-stage-header">
+                <span className="df-stage-badge stage-diagnosing">🧠 Agent 辨证诊断</span>
+                <span className="df-stage-status">{agentStage === 'diagnosing' ? '分析中...' : '已完成'}</span>
+              </div>
+              {agentStage === 'diagnosing' ? (
+                <div className="df-agent-thinking">
+                  <div className="df-thinking-dots">
+                    <span /><span /><span />
+                  </div>
+                  <p>Agent 正在进行辨证分析...</p>
+                  <div className="df-thinking-detail">基于关键词匹配与中医知识图谱推理</div>
+                </div>
+              ) : (
+                <div className="df-agent-done-msg">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#52C41A" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>
+                  <span>辨证分析完成，输出 {agentOutput?.length || 0} 个候选证型</span>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 阶段4: 结果输出 */}
+          {agentStage === 'output' && agentOutput && (
+            <div className="df-card df-agent-stage-card df-stage-active df-output-card">
+              <div className="df-stage-header">
+                <span className="df-stage-badge stage-output">📊 诊断结果输出</span>
+              </div>
+
+              {/* 诊断结果卡片 */}
               <div className="df-result-cards">
-                {diagnosisResults.map((result) => (
+                {agentOutput.map((result) => (
                   <div
                     key={result.pattern}
                     className={`df-result-card ${selectedPattern === result.pattern ? 'selected' : ''}`}
@@ -491,38 +673,36 @@ const DiagnosisFlow: React.FC = () => {
                   </div>
                 ))}
               </div>
-            </div>
 
-            {/* Custom Diagnosis */}
-            {customDiagnoses.length > 0 && (
-              <div className="df-card df-custom-section">
-                <div className="df-card-header">
-                  <h2>已选辨证结果</h2>
-                  <span className="df-count-badge">{customDiagnoses.length}</span>
-                </div>
-                <div className="df-custom-list">
-                  {customDiagnoses.map((diag) => (
-                    <div key={diag.id} className="df-custom-card">
-                      <div className="df-custom-header">
-                        <span className="df-custom-pattern">{diag.pattern}</span>
-                        <button className="df-btn-remove" onClick={() => handleRemoveCustom(diag.id)}>×</button>
+              {/* 已选辨证结果 */}
+              {customDiagnoses.length > 0 && (
+                <div className="df-custom-section-inline">
+                  <div className="df-card-header" style={{ marginTop: 16 }}>
+                    <h2>已选辨证结果</h2>
+                    <span className="df-count-badge">{customDiagnoses.length}</span>
+                  </div>
+                  <div className="df-custom-list">
+                    {customDiagnoses.map((diag) => (
+                      <div key={diag.id} className="df-custom-card">
+                        <div className="df-custom-header">
+                          <span className="df-custom-pattern">{diag.pattern}</span>
+                          <button className="df-btn-remove" onClick={() => handleRemoveCustom(diag.id)}>×</button>
+                        </div>
+                        <p className="df-custom-desc">{diag.description}</p>
+                        <div className="df-symptom-tags">
+                          {diag.symptoms.map((s, i) => (
+                            <span key={i} className="df-symptom-tag">{s}</span>
+                          ))}
+                        </div>
                       </div>
-                      <p className="df-custom-desc">{diag.description}</p>
-                      <div className="df-symptom-tags">
-                        {diag.symptoms.map((s, i) => (
-                          <span key={i} className="df-symptom-tag">{s}</span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Add Custom */}
-            <div className="df-card">
-              <h2 className="df-section-title">添加辨证结果</h2>
-              <div className="df-add-form">
+              {/* 添加辨证结果 */}
+              <div className="df-add-form" style={{ marginTop: 16 }}>
+                <h3 className="df-add-form-title">添加/修改辨证结果</h3>
                 <div className="df-form-group">
                   <label>证型名称</label>
                   <input type="text" value={customPattern} onChange={(e) => setCustomPattern(e.target.value)} placeholder="请输入证型名称或点击上方AI建议" />
@@ -569,59 +749,81 @@ const DiagnosisFlow: React.FC = () => {
                   <button className="btn btn-primary" onClick={handleAddCustomDiagnosis}>添加到自选</button>
                 </div>
               </div>
-            </div>
 
-            {/* Pattern Detail */}
-            <div className="df-card">
-              <h2 className="df-section-title">证候详情</h2>
-              <div className="df-detail-grid">
-                <div className="df-detail-item"><label>证型名称</label><span>{selectedPattern || '肝阳上亢证'}</span></div>
-                <div className="df-detail-item"><label>证候编码</label><span>B01.02</span></div>
-                <div className="df-detail-item"><label>病因病机</label><span>情志内伤，肝肾阴虚，水不涵木</span></div>
-                <div className="df-detail-item"><label>典型脉象</label><span>脉弦数</span></div>
-                <div className="df-detail-item"><label>典型舌象</label><span>舌红，苔黄</span></div>
-              </div>
-              <div className="df-diff-section">
-                <h3>症状辨证权重</h3>
-                {patternDetails['肝阳上亢']?.differentiation.map((item, index) => (
-                  <div key={index} className="df-diff-item">
-                    <span className="df-diff-symptom">{item.symptom}</span>
-                    <div className="df-diff-bar">
-                      <div className={`df-diff-fill ${item.weight === '主要' ? 'major' : 'minor'}`} style={{ width: item.weight === '主要' ? '80%' : '50%' }} />
+              {/* 证候详情 */}
+              <div style={{ marginTop: 20 }}>
+                <h2 className="df-section-title">证候详情</h2>
+                <div className="df-detail-grid">
+                  <div className="df-detail-item"><label>证型名称</label><span>{selectedPattern || '肝阳上亢证'}</span></div>
+                  <div className="df-detail-item"><label>证候编码</label><span>B01.02</span></div>
+                  <div className="df-detail-item"><label>病因病机</label><span>情志内伤，肝肾阴虚，水不涵木</span></div>
+                  <div className="df-detail-item"><label>典型脉象</label><span>脉弦数</span></div>
+                  <div className="df-detail-item"><label>典型舌象</label><span>舌红，苔黄</span></div>
+                </div>
+                <div className="df-diff-section">
+                  <h3>症状辨证权重</h3>
+                  {patternDetails['肝阳上亢']?.differentiation.map((item, index) => (
+                    <div key={index} className="df-diff-item">
+                      <span className="df-diff-symptom">{item.symptom}</span>
+                      <div className="df-diff-bar">
+                        <div className={`df-diff-fill ${item.weight === '主要' ? 'major' : 'minor'}`} style={{ width: item.weight === '主要' ? '80%' : '50%' }} />
+                      </div>
+                      <span className={`df-diff-weight ${item.weight === '主要' ? 'major' : 'minor'}`}>{item.weight}</span>
                     </div>
-                    <span className={`df-diff-weight ${item.weight === '主要' ? 'major' : 'minor'}`}>{item.weight}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="df-step-actions">
-              <button className="btn btn-outline" onClick={() => setCurrentStep(2)}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
-                上一步
-              </button>
-              <button className="btn btn-primary btn-lg" onClick={handleConfirm}>确认诊断</button>
+          {/* 空闲状态提示 */}
+          {agentStage === 'idle' && (
+            <div className="df-card df-agent-idle-card">
+              <div className="df-idle-content">
+                <div className="df-idle-icon">🧠</div>
+                <h3>辨证诊断 Agent 就绪</h3>
+                <p>点击"启动诊断"按钮，Agent 将自动完成以下工作流：</p>
+                <div className="df-idle-steps">
+                  <div className="df-idle-step"><span className="df-idle-step-num">1</span><span>接收诊疗流程信息字符串</span></div>
+                  <div className="df-idle-step-arrow">→</div>
+                  <div className="df-idle-step"><span className="df-idle-step-num">2</span><span>预处理提取关键词</span></div>
+                  <div className="df-idle-step-arrow">→</div>
+                  <div className="df-idle-step"><span className="df-idle-step-num">3</span><span>Agent辨证分析</span></div>
+                  <div className="df-idle-step-arrow">→</div>
+                  <div className="df-idle-step"><span className="df-idle-step-num">4</span><span>输出诊断结果</span></div>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Sidebar */}
-          <div className="df-diagnosis-sidebar">
+          {/* 侧边栏 */}
+          <div className="df-agent-sidebar">
             <div className="df-sidebar-card">
               <h3>四诊摘要</h3>
               <div className="df-summary-list">
-                <div className="df-summary-item"><label>脉诊</label><span>左手弦数，右手细弱</span></div>
-                <div className="df-summary-item"><label>舌诊</label><span>舌红，苔黄腻</span></div>
-                <div className="df-summary-item"><label>望诊</label><span>面色潮红，神情焦虑</span></div>
-                <div className="df-summary-item"><label>问诊</label><span>头痛眩晕，失眠多梦，口苦咽干</span></div>
+                <div className="df-summary-item"><label>脉诊</label><span>{symptoms.pulseLeft ? `左手${symptoms.pulseLeft}` : '左手未述'}，{symptoms.pulseRight ? `右手${symptoms.pulseRight}` : '右手未述'}</span></div>
+                <div className="df-summary-item"><label>舌诊</label><span>{symptoms.tongueColor ? `舌质${symptoms.tongueColor}` : '未述'}，{symptoms.tongueCoating ? `苔${symptoms.tongueCoating}` : '未述'}</span></div>
+                <div className="df-summary-item"><label>望诊</label><span>{symptoms.facialColor ? `面色${symptoms.facialColor}` : '未述'}</span></div>
+                <div className="df-summary-item"><label>问诊</label><span>{[symptoms.sleepQuality && `睡眠${symptoms.sleepQuality}`, symptoms.appetite && `食欲${symptoms.appetite}`, symptoms.thirst && `口渴${symptoms.thirst}`, symptoms.bowelMovement && `二便${symptoms.bowelMovement}`].filter(Boolean).join('，') || '未述'}</span></div>
               </div>
             </div>
             <div className="df-sidebar-card df-warning-card">
               <div className="df-warning-icon">⚠️</div>
               <div>
                 <h4>注意事项</h4>
-                <p>患者有高血压病史，处方需注意监测血压变化</p>
+                <p>Agent诊断结果仅供参考，请结合临床经验进行最终判断</p>
               </div>
             </div>
+          </div>
+
+          <div className="df-step-actions">
+            <button className="btn btn-outline" onClick={() => setCurrentStep(2)}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="15 18 9 12 15 6" /></svg>
+              上一步
+            </button>
+            {agentStage === 'output' && (
+              <button className="btn btn-primary btn-lg" onClick={handleConfirm}>确认诊断</button>
+            )}
           </div>
         </div>
       )}
