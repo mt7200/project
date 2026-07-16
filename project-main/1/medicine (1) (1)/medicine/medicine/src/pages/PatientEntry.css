@@ -1,0 +1,366 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.patient-entry {
+  min-height: 100vh;
+  background: #f5f7fa;
+  padding: 8px 24px;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.header-content h1 {
+  font-size: 20px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.header-content p {
+  font-size: 13px;
+  color: #999;
+}
+
+.header-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-primary,
+.btn-secondary {
+  padding: 8px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1890ff, #096dd9);
+  color: white;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
+}
+
+.btn-secondary {
+  background: white;
+  color: #666;
+  border: 1px solid #e8e8e8;
+}
+
+.btn-secondary:hover {
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 8px;
+  padding: 8px 24px;
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.step-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #e8e8e8;
+  color: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  transition: all 0.3s;
+}
+
+.step.active .step-number {
+  background: #1890ff;
+  color: white;
+}
+
+.step-label {
+  font-size: 14px;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.step.active .step-label {
+  color: #1890ff;
+  font-weight: 500;
+}
+
+.step-line {
+  width: 80px;
+  height: 2px;
+  background: #e8e8e8;
+  margin: 0 12px;
+  margin-bottom: 14px;
+  transition: all 0.3s;
+}
+
+.step-line.active {
+  background: #1890ff;
+}
+
+.patient-form {
+  background: white;
+  border-radius: 10px;
+  padding: 12px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.form-section h2 {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.form-section h3 {
+  font-size: 14px;
+  color: #333;
+  font-weight: 500;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-group label {
+  font-size: 14px;
+  color: #666;
+  font-weight: 500;
+}
+
+.required {
+  color: #ff4d4f;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+  padding: 4px 8px;
+  border: 1px solid #e8e8e8;
+  border-radius: 6px;
+  font-size: 13px;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  background: white;
+  font-family: inherit;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #1890ff;
+  box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+  color: #bbb;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 36px;
+}
+
+.info-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #e6f7ff;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.info-icon {
+  font-size: 18px;
+}
+
+.info-content h4 {
+  font-size: 13px;
+  color: #1890ff;
+  margin-bottom: 2px;
+}
+
+.info-content p {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.action-card {
+  display: flex;
+  gap: 10px;
+  padding: 10px;
+  background: #f6ffed;
+  border-radius: 8px;
+  margin-top: 10px;
+}
+
+.action-icon {
+  font-size: 18px;
+}
+
+.action-content h4 {
+  font-size: 13px;
+  color: #52c41a;
+  margin-bottom: 2px;
+}
+
+.action-content p {
+  font-size: 12px;
+  color: #666;
+  line-height: 1.4;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e8e8e8;
+}
+
+.step3-section {
+  padding: 0;
+}
+
+.step3-tabs {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  border-bottom: 2px solid #e8e8e8;
+  padding-bottom: 0;
+}
+
+.step3-tab {
+  padding: 7px 16px;
+  background: none;
+  border: none;
+  font-size: 13px;
+  color: #666;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: all 0.2s;
+  border-radius: 6px 6px 0 0;
+}
+
+.step3-tab:hover {
+  color: #1890ff;
+  background: #f0f7ff;
+}
+
+.step3-tab.active {
+  color: #1890ff;
+  font-weight: 600;
+  border-bottom-color: #1890ff;
+  background: #e6f7ff;
+}
+
+.step3-content {
+  padding: 0;
+}
+
+.step3-content h2 {
+  font-size: 16px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.four-diagnosis {
+  margin-top: 4px;
+}
+
+.four-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.four-section {
+  background: #fafafa;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #f0f0f0;
+}
+
+.four-section h3 {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.four-section .form-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.four-section .form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.diagnosis-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 8px;
+}
