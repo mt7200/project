@@ -414,18 +414,13 @@ export default function Workspace() {
               {emrPatientList.map(patient => {
                 const isSelected = selectedPatientFromBar === patient.id
                 return (
-                  <div key={patient.id} className={`ws-patient-item ${isSelected ? 'selected' : ''}`} onClick={() => setSelectedPatientFromBar(patient.id)}>
+                  <div key={patient.id} className={`ws-patient-item ${isSelected ? 'selected' : ''}`} onClick={() => { setSelectedPatientFromBar(patient.id); handleAutoFill(patient) }}>
                     <div className="ws-patient-item-head">
                       <span className="ws-patient-name">{patient.name}</span>
                       <span className="ws-patient-gender">{patient.gender}/{patient.age}岁</span>
                     </div>
                     <div className="ws-patient-diagnosis">{patient.diagnosis}</div>
                     <div className="ws-patient-status">{patient.status}</div>
-                    {isSelected && (
-                      <button className="btn btn-primary btn-sm" style={{ marginTop: 6, width: '100%' }} onClick={(e) => { e.stopPropagation(); handleAutoFill(patient) }}>
-                        自动填充
-                      </button>
-                    )}
                   </div>
                 )
               })}
