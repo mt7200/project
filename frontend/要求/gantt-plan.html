@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>中医医疗系统开发计划</title>
+    <link rel="stylesheet" href="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.css" />
+    <script src="https://cdn.dhtmlx.com/gantt/edge/dhtmlxgantt.js"></script>
+    <style>
+        body { margin: 10px; font-family: Arial, sans-serif; background: #f5f5f5; }
+        h2 { color: #333; margin-bottom: 10px; }
+        #gantt_here { height: 700px; border: 1px solid #ccc; border-radius: 4px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .task-info { background: #fff; padding: 15px; border-radius: 4px; margin-top: 15px; display: none; }
+        .task-info.show { display: block; }
+        .resource-badge { display: inline-block; padding: 2px 8px; border-radius: 3px; color: #fff; font-size: 12px; margin-left: 10px; }
+        .badge-沈文博 { background: #2196F3; }
+        .badge-李鮋 { background: #4CAF50; }
+        .badge-罗方程 { background: #9C27B0; }
+        .badge-全体 { background: #FF9800; }
+    </style>
+</head>
+<body>
+    <h2>中医医疗系统开发计划 (每日自测 + 分阶段联调)</h2>
+    <div style="background:#e3f2fd;padding:10px;border-radius:4px;margin-bottom:10px;">
+        <strong>📌 项目技术规范摘要：</strong>
+        <table style="width:100%;font-size:13px;margin-top:8px;border-collapse:collapse;">
+            <tr style="border-bottom:1px solid #ddd;"><th colspan="3" style="text-align:left;padding:5px;">技术栈</th></tr>
+            <tr><td style="padding:3px;"><strong>前端:</strong></td><td colspan="2">Vue 3.5 + TypeScript 5.6 + Vite 6 + Vue Router 4 + ECharts 5.5</td></tr>
+            <tr><td style="padding:3px;"><strong>后端:</strong></td><td colspan="2">Python 3.10+ / FastAPI 最新 / SQLAlchemy 2.x / MySQL 8.x InnoDB</td></tr>
+            <tr><td style="padding:3px;"><strong>IDE:</strong></td><td colspan="2">VS Code (前端) + PyCharm (后端)</td></tr>
+            <tr style="border-bottom:1px solid #ddd;"><th colspan="3" style="text-align:left;padding:5px;">核心业务约束</th></tr>
+            <tr><td style="padding:3px;">剂量校验</td><td colspan="2"><code>dosage ≥ min_dosage</code> & <code>dosage ≤ max_dosage</code></td></tr>
+            <tr><td style="padding:3px;">配伍禁忌</td><td colspan="2">十八反/十九畏检测 (甘草 - 甘遂/乌头 - 半夏等)</td></tr>
+            <tr><td style="padding:3px;">审核状态</td><td colspan="2"><code>draft→pending→approved/rejected</code></td></tr>
+            <tr style="border-bottom:1px solid #ddd;"><th colspan="3" style="text-align:left;padding:5px;">团队分工</th></tr>
+            <tr><td style="padding:3px;">李鮋</td><td>数据库+核心 CRUD API</td><td style="width:50%;">herb, herb_incompatibility, formula, formula_herb, patient, visit_record, emr, syndrome_pattern, symptom_dict; /api/patients/*, /api/visits/*, /api/herbs/*, /api/formulas/*, /api/emrs/*, /api/symptom-dict/*, /api/syndrome-patterns/* API</td></tr>
+            <tr><td style="padding:3px;">沈文博</td><td>业务 API+ 服务层</td><td>auth/login, prescription, prescription_review, statistics, dosage_check_service, incompatibility_check_service, risk_evaluation_service; /api/auth/*, /api/prescriptions/*, /api/review/*, /api/statistics/*</td></tr>
+            <tr><td style="padding:3px;">罗方程</td><td>所有前端页面/API 封装</td><td>需要完整 API 文档和 Swagger 地址</td></tr>
+            <tr style="border-bottom:1px solid #ddd;"><th colspan="3" style="text-align:left;padding:5px;">开发模式</th></tr>
+            <tr><td style="padding:3px;">前端</td><td colspan="2"><code>mock 先跑 UI → 当天接口联调 → Bug 当日清零</code></td></tr>
+            <tr><td style="padding:3px;">后端</td><td colspan="2"><code>Swagger/Postman 自测通过 → 提供开放接口 → 支持 CORS 跨域</code></td></tr>
+            <tr style="border-bottom:1px solid #ddd;"><th colspan="3" style="text-align:left;padding:5px;">工作时间</th></tr>
+            <tr><td style="padding:3px;">每日时段</td><td colspan="2">上午 9:00-12:00 | 下午 13:30-18:00 (7.5h/天)</td></tr>
+        </table>
+    </div>
+    <div id="gantt_here"></div>
+    <div id="taskInfo" class="task-info"></div>
+
+    <script>
+        gantt.config.date_format = "%Y-%m-%d %H:%i";
+        gantt.config.scale_height = 50;
+        gantt.config.scale_unit = "day";
+        gantt.config.date_scale = "%m/%d %D";
+        gantt.config.subscales = [
+            { unit: "hour", format: "%H:%i", date_scale: "%H" }
+        ];
+        gantt.config.min_column_width = 30;
+        gantt.config.start_hour = 8;
+        gantt.config.end_hour = 19;
+        gantt.config.skip_off_time = false;
+
+        gantt.config.columns = [
+            {name: "id", label: "ID", width: 40, align: "center"},
+            {name: "text", label: "开发任务", tree: true, width: 360},
+            {name: "start_date", label: "开始时间", width: 130},
+            {name: "duration", label: "时长(h)", width: 60},
+            {name: "progress", label: "进度%", width: 60}
+        ];
+
+        const tasks = [
+            // ===================== Day 1: 7/16 (15:30-18:00 = 2.5h) =====================
+            {
+                id: 1, text: "📦 Day 1 (7/16 下午) 项目启动", start_date: "2026-07-16 15:30",
+                duration: 2.5, progress: 0, type: "project", open: true
+            },
+            {
+                id: 2, text: "李鮋：FastAPI 脚手架 + MySQL 建表 (all tables)",
+                start_date: "2026-07-16 15:30", duration: 2.5, progress: 0, resource: "李鮋", parent: 1
+            },
+            {
+                id: 3, text: "沈文博：JWT 认证核心模块准备",
+                start_date: "2026-07-16 15:30", duration: 2.5, progress: 0, resource: "沈文博", parent: 1
+            },
+            {
+                id: 4, text: "罗方程：axios 封装 + 类型定义 (User/Patient/Visit)",
+                start_date: "2026-07-16 15:30", duration: 2.5, progress: 0, resource: "罗方程", parent: 1
+            },
+
+            // ===================== Day 2: 7/17 (7.5h) =====================
+            {
+                id: 10, text: "📅 Day 2 (7/17) 药材库 + 患者管理 + 登录页", start_date: "2026-07-17 09:00",
+                duration: 7.5, progress: 0, type: "project", open: true
+            },
+            // 上午 9:00-12:00
+            {
+                id: 11, text: "李鮋 [上午]：herb 表+药材数据导入 + patients CRUD API",
+                start_date: "2026-07-17 09:00", duration: 3, progress: 0, resource: "李鮋", parent: 10
+            },
+            {
+                id: 12, text: "沈文博 [上午]：auth/login API + JWT 认证中间件",
+                start_date: "2026-07-17 09:00", duration: 3, progress: 0, resource: "沈文博", parent: 10
+            },
+            {
+                id: 13, text: "罗方程 [上午]：Login.vue 登录界面 (mock 数据)",
+                start_date: "2026-07-17 09:00", duration: 3, progress: 0, resource: "罗方程", parent: 10
+            },
+            // 上午自测
+            {
+                id: 14, text: "⏱ 后端接口自测 (Swagger/Postman) + 前端 UI 自测",
+                start_date: "2026-07-17 11:30", duration: 0.5, progress: 0, resource: "全体", parent: 10, type: "testing"
+            },
+            // 下午 13:30-18:00
+            {
+                id: 15, text: "李鮋 [下午]：formula/formula_herb导入+ herbs API(GET/搜索)",
+                start_date: "2026-07-17 13:30", duration: 3, progress: 0, resource: "李鮋", parent: 10
+            },
+            {
+                id: 16, text: "沈文博 [下午]：剂量校验引擎 + 配伍禁忌检测逻辑",
+                start_date: "2026-07-17 13:30", duration: 3, progress: 0, resource: "沈文博", parent: 10
+            },
+            {
+                id: 17, text: "罗方程 [下午]：PatientEntry.vue 患者入院登记",
+                start_date: "2026-07-17 13:30", duration: 3, progress: 0, resource: "罗方程", parent: 10
+            },
+            // 下午自测
+            {
+                id: 18, text: "⏱ 后端接口自测 + 前端页面自测",
+                start_date: "2026-07-17 16:30", duration: 0.5, progress: 0, resource: "全体", parent: 10, type: "testing"
+            },
+            // Day 2 联调
+            {
+                id: 19, text: "🔗 前端↔后端对接 (登录 + 患者管理)",
+                start_date: "2026-07-17 17:00", duration: 1, progress: 0, resource: "全体", parent: 10, type: "integration"
+            },
+
+            // ===================== Day 3: 7/20 (7.5h) =====================
+            {
+                id: 20, text: "📅 Day 3 (7/20) 就诊记录 + 开方 API+ 诊疗页面", start_date: "2026-07-20 09:00",
+                duration: 7.5, progress: 0, type: "project", open: true
+            },
+            // 上午
+            {
+                id: 21, text: "李鮋 [上午]：visit_record CRUD + syndrome_pattern/symptom_dict 导入",
+                start_date: "2026-07-20 09:00", duration: 3, progress: 0, resource: "李鮋", parent: 20
+            },
+            {
+                id: 22, text: "沈文博 [上午]：prescription POST 创建 + prescription_item 管理 API",
+                start_date: "2026-07-20 09:00", duration: 3, progress: 0, resource: "沈文博", parent: 20
+            },
+            {
+                id: 23, text: "罗方程 [上午]：Workspace.vue 四诊信息录入",
+                start_date: "2026-07-20 09:00", duration: 3, progress: 0, resource: "罗方程", parent: 20
+            },
+            // 上午自测
+            {
+                id: 24, text: "⏱ 后端接口自测 (visits/prescriptions)",
+                start_date: "2026-07-20 11:30", duration: 0.5, progress: 0, resource: "全体", parent: 20, type: "testing"
+            },
+            // 下午
+            {
+                id: 25, text: "李鮋 [下午]：visits GET/query API + syndrome-patterns/symptom-dict APIs",
+                start_date: "2026-07-20 13:30", duration: 2.5, progress: 0, resource: "李鮋", parent: 20
+            },
+            {
+                id: 26, text: "罗方程 [下午]：DiagnosisFlow.vue + PrescriptionFlow.vue UI",
+                start_date: "2026-07-20 13:30", duration: 2.5, progress: 0, resource: "罗方程", parent: 20
+            },
+            // 下午自测
+            {
+                id: 27, text: "⏱ 后端全接口自测 + 前端自测",
+                start_date: "2026-07-20 16:00", duration: 0.5, progress: 0, resource: "全体", parent: 20, type: "testing"
+            },
+            // Day 3 联调
+            {
+                id: 28, text: "🔗 前端↔后端对接 (就诊 + 开方 + 配伍检测)",
+                start_date: "2026-07-20 16:30", duration: 1.5, progress: 0, resource: "全体", parent: 20, type: "integration"
+            },
+
+            // ===================== Day 4: 7/21 (7.5h) =====================
+            {
+                id: 30, text: "🎯 Day 4 (7/21) 病历库/审方/统计 + 全链路联调", start_date: "2026-07-21 09:00",
+                duration: 7.5, progress: 0, type: "project", open: true
+            },
+            // 上午
+            {
+                id: 31, text: "李鮋 [上午]：emr CRUD + emrs GET/query API + prescription_review 建表",
+                start_date: "2026-07-21 09:00", duration: 3, progress: 0, resource: "李鮋", parent: 30
+            },
+            {
+                id: 32, text: "沈文博 [上午]：prescription_review API + statistics 聚合查询 API",
+                start_date: "2026-07-21 09:00", duration: 3, progress: 0, resource: "沈文博", parent: 30
+            },
+            {
+                id: 33, text: "罗方程 [上午]：EMRViewEdit.vue + Statistics.vue",
+                start_date: "2026-07-21 09:00", duration: 3, progress: 0, resource: "罗方程", parent: 30
+            },
+            // 上午自测
+            {
+                id: 34, text: "⏱ 全员接口自测 (emrs/review/statistics)",
+                start_date: "2026-07-21 11:30", duration: 0.5, progress: 0, resource: "全体", parent: 30, type: "testing"
+            },
+            // 下午
+            {
+                id: 35, text: "李鮋 [下午]：emrs API(GET/筛选/详情)",
+                start_date: "2026-07-21 13:30", duration: 2, progress: 0, resource: "李鮋", parent: 30
+            },
+            {
+                id: 36, text: "罗方程 [下午]：PrescriptionReview.vue 审方页面",
+                start_date: "2026-07-21 13:30", duration: 2, progress: 0, resource: "罗方程", parent: 30
+            },
+            // 下午自测
+            {
+                id: 37, text: "⏱ 后端全接口自测 + 前端自测",
+                start_date: "2026-07-21 15:30", duration: 0.5, progress: 0, resource: "全体", parent: 30, type: "testing"
+            },
+            // Day 4 联调
+            {
+                id: 38, text: "🔗 前端↔后端对接 (EMR + 统计 + 审方)",
+                start_date: "2026-07-21 16:00", duration: 1, progress: 0, resource: "全体", parent: 30, type: "integration"
+            },
+            // 全链路
+            {
+                id: 39, text: "🤝 全链路联调 (登录→入院→诊疗→开方→审方→病历→统计)",
+                start_date: "2026-07-21 17:00", duration: 0.5, progress: 0, resource: "全体", parent: 30, type: "integration"
+            },
+            // Bug 清零
+            {
+                id: 40, text: "🌙 Bug 总清仓 + 验收准备",
+                start_date: "2026-07-21 17:30", duration: 0.5, progress: 0, resource: "全体", parent: 30, type: "review"
+            }
+        ];
+
+        gantt.templates.task_text = function(start, end, task){
+            let badge = "";
+            if(task.resource){
+                let cleanResource = task.resource.replace(/\s/g, '');
+                badge = `<span class="resource-badge badge-${cleanResource}">${task.resource}</span>`;
+            }
+            if(task.type === "testing") return `⏱ ${task.text} ${badge}`;
+            if(task.type === "integration") return `🔗 ${task.text} ${badge}`;
+            if(task.type === "review") return `🌙 ${task.text} ${badge}`;
+            return `${task.text} ${badge}`;
+        };
+
+        gantt.init("gantt_here");
+        gantt.parse({ data: tasks });
+
+        gantt.onAfterTaskSelect = function(id){
+            const task = gantt.getTask(id);
+            if(task.type === "project"){
+                document.getElementById("taskInfo").innerHTML = "";
+                return;
+            }
+            let taskType = "";
+            if(task.type === "testing") taskType = "<span style='color:#E65100;'>【接口自测】</span>";
+            else if(task.type === "integration") taskType = "<span style='color:#9C27B0;'>【前后端对接】</span>";
+            else if(task.type === "review") taskType = "<span style='color:#FF9800;'>【Bug 清零】</span>";
+            document.getElementById("taskInfo").innerHTML =
+                `<strong>${task.text.replace(/^[⏱🔗🌙]\s*/, '')}</strong><br/>` +
+                `类型：${taskType || "开发任务"}<br/>` +
+                `开始：${gantt.dateFormat("%Y-%m-%d %H:%i")(new Date(task.start_date))}<br/>` +
+                `时长：${task.duration}小时 | 进度：${task.progress}%<br/>` +
+                `负责人：<span class="resource-badge badge-${task.resource.replace(/\s/g, '')}">${task.resource}</span>`;
+            document.getElementById("taskInfo").classList.add("show");
+        };
+    </script>
+</body>
+</html>
