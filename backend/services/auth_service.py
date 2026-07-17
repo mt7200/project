@@ -1,9 +1,11 @@
 """认证业务服务"""
 from typing import Optional
+from fastapi import Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 
 from models.user import User
 from core.security import verify_password, create_access_token, decode_access_token
+from core.database import get_db
 from schemas.auth import LoginResponse, UserInfo
 
 
@@ -32,3 +34,17 @@ def get_current_user(db: Session, token: str) -> Optional[User]:
     if not user_id:
         return None
     return get_user_by_id(db, int(user_id))
+
+
+async def require_auth(
+    authorization: str = Header(None),
+    db: Session = Depends(get_db),
+) -> User:
+    """FastAPI 依赖注入：从请求头中提取 Bearer token 并验证用户身份"""
+    if not authorization or not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="未提供认证令牌")
+    token = authorization.split(" ", 1)[1]
+    user = get_current_user(db, token)
+    if not user:
+        raise HTTPException(status_code=401, detail="无效的认证令牌")
+    return user

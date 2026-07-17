@@ -1,40 +1,50 @@
-"""患者相关 Schema"""
-from datetime import date, datetime
+"""患者 Pydantic Schema"""
+from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
 
-class PatientBase(BaseModel):
+class PatientCreate(BaseModel):
     name: str
     gender: Optional[str] = None
-    birth_date: Optional[date] = None
+    age: Optional[int] = None
     phone: Optional[str] = None
     id_card: Optional[str] = None
     address: Optional[str] = None
-    allergy: Optional[str] = None
-    medical_history: Optional[str] = None
+    blood_type: Optional[str] = None
+    height: Optional[int] = None
+    weight: Optional[int] = None
+    allergy_info: Optional[str] = None
 
 
-class PatientCreate(PatientBase):
-    pass
+class PatientUpdate(BaseModel):
+    name: Optional[str] = None
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    phone: Optional[str] = None
+    id_card: Optional[str] = None
+    address: Optional[str] = None
+    blood_type: Optional[str] = None
+    height: Optional[int] = None
+    weight: Optional[int] = None
+    allergy_info: Optional[str] = None
 
 
-class PatientUpdate(PatientBase):
-    pass
-
-
-class PatientOut(PatientBase):
-    id: int
-    created_at: datetime
-    updated_at: datetime
-
-    class Config:
-        from_attributes = True
-
-
-class PatientSummary(BaseModel):
+class PatientOut(BaseModel):
     id: int
     name: str
-    gender: Optional[str]
-    age: Optional[int]
-    last_visit_date: Optional[datetime]
+    gender: Optional[str] = None
+    age: Optional[int] = None
+    phone: Optional[str] = None
+    id_card: Optional[str] = None
+    address: Optional[str] = None
+    blood_type: Optional[str] = None
+    height: Optional[int] = None
+    weight: Optional[int] = None
+    allergy_info: Optional[str] = None
+    status: Optional[str] = "active"
+    created_by: Optional[int] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    model_config = {"from_attributes": True}
