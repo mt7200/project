@@ -8,9 +8,9 @@ class Settings(BaseSettings):
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api"
 
-    DATABASE_URL: str = "mysql+pymysql://root:password@localhost:3306/tcm_medical"
+    DATABASE_URL: str = ""
 
-    JWT_SECRET_KEY: str = "change-me-in-production"
+    JWT_SECRET_KEY: str = ""
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRE_MINUTES: int = 1440
 
