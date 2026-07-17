@@ -6,10 +6,10 @@ from core.database import Base
 
 
 class DiagnosisResult(Base):
-    __tablename__ = "diagnosis_results"
+    __tablename__ = "diagnosis_result"
 
     id = Column(Integer, primary_key=True, index=True)
-    visit_id = Column(Integer, ForeignKey("visits.id"), nullable=False, index=True)
+    visit_id = Column(Integer, ForeignKey("visit_record.id"), nullable=False, index=True)
     pattern_name = Column(String(100), index=True)
     pattern_code = Column(String(20))
     confidence = Column(Integer)

@@ -5,11 +5,11 @@ from core.database import Base
 
 
 class HerbIncompatibility(Base):
-    __tablename__ = "herb_incompatibilities"
+    __tablename__ = "herb_incompatibility"
 
     id = Column(Integer, primary_key=True, index=True)
-    herb_a_id = Column(Integer, ForeignKey("herbs.id"), nullable=False)
-    herb_b_id = Column(Integer, ForeignKey("herbs.id"), nullable=False)
+    herb_a_id = Column(Integer, ForeignKey("herb.id"), nullable=False)
+    herb_b_id = Column(Integer, ForeignKey("herb.id"), nullable=False)
     type = Column(String(20), nullable=False, default="incompatibility")
 
     __table_args__ = (

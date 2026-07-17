@@ -5,7 +5,7 @@ from core.database import Base
 
 
 class Herb(Base):
-    __tablename__ = "herbs"
+    __tablename__ = "herb"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(64), unique=True, nullable=False, index=True)
