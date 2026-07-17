@@ -5,3 +5,4 @@ backend/**/__pycache__/
 backend/.env
 .env
 *.pyc
+backend/.venv/
