@@ -1,37 +1,19 @@
 """处方业务服务：创建处方 + 剂量校验 + 触发自动审核"""
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any
 from sqlalchemy.orm import Session
 
 from models.herb import Herb
 from models.prescription import Prescription
-from schemas.prescription import PrescriptionCreate, PrescriptionOut
+from schemas.prescription import PrescriptionCreate, PrescriptionResponse
 from services.review_service import run_auto_review
 
 
 def validate_dosage(db: Session, herbs: List[Dict[str, Any]]) -> Dict[str, Any]:
-    """
-    剂量校验：检查每味药材的用量是否在安全范围内。
-
-    参数:
-        db: 数据库会话
-        herbs: 处方药材列表，每项至少包含 {"id": int, "current_dosage": float}
-               示例: [{"id": 1, "name": "甘草", "current_dosage": 3.0}]
-
-    返回:
-        {
-            "warnings": [{ "herb_name", "message", "actual", "min", "max" }],
-            "high_risks": [{ "herb_name", "message", "actual", "min", "max" }],
-            "critical_risks": [{ "herb_name", "message", "actual", "min", "max" }],
-            "has_critical": bool,   # 是否存在严重越界
-            "score": int,           # 风险总分
-        }
-    """
     warnings: List[Dict[str, Any]] = []
     high_risks: List[Dict[str, Any]] = []
     critical_risks: List[Dict[str, Any]] = []
     score = 0
 
-    # 批量查药材（避免 N+1）
     herb_ids = [h.get("id") for h in herbs if h.get("id")]
     herb_map: Dict[int, Herb] = {}
     if herb_ids:
@@ -45,7 +27,6 @@ def validate_dosage(db: Session, herbs: List[Dict[str, Any]]) -> Dict[str, Any]:
 
         h = herb_map.get(herb_id)
         if not h:
-            # 数据库中无此药材记录，跳过校验
             continue
 
         min_d = h.min_dosage or 0
@@ -92,7 +73,6 @@ def validate_dosage(db: Session, herbs: List[Dict[str, Any]]) -> Dict[str, Any]:
 
 
 def determine_risk_level(score: int, has_critical: bool) -> str:
-    """根据风险分确定等级"""
     if has_critical or score > 10:
         return "high"
     if score > 5:
@@ -100,27 +80,34 @@ def determine_risk_level(score: int, has_critical: bool) -> str:
     return "low"
 
 
-def create_prescription_with_review(db: Session, payload: PrescriptionCreate) -> PrescriptionOut:
-    """创建处方：持久化 + 剂量校验 + 自动审核"""
-    herbs = payload.herbs or []
+def create_prescription_with_review(db: Session, payload: PrescriptionCreate) -> PrescriptionResponse:
+    # 将 items 转为 herbs dict 列表（兼容现有 herbs JSON 字段）
+    herb_list: List[Dict[str, Any]] = []
+    for item in payload.items:
+        h = db.query(Herb).filter(Herb.id == item.herb_id).first()
+        herb_list.append({
+            "id": item.herb_id,
+            "name": h.name if h else "未知",
+            "current_dosage": item.dosage,
+            "dosage": item.dosage,
+            "unit": item.unit,
+        })
 
-    # 1) 持久化处方
     rx = Prescription(
         visit_id=payload.visit_id,
         patient_id=payload.patient_id,
+        doctor_id=payload.doctor_id,
         diagnosis=payload.diagnosis,
         syndrome=payload.syndrome,
-        herbs=herbs,
+        herbs=herb_list,
         notes=payload.notes,
+        status="draft",
     )
     db.add(rx)
     db.commit()
     db.refresh(rx)
 
-    # 2) 剂量校验
-    dosage_result = validate_dosage(db, herbs)
-
-    # 将剂量校验结果写入处方
+    dosage_result = validate_dosage(db, herb_list)
     rx.dosage_risk = len(dosage_result["high_risks"]) > 0 or dosage_result["has_critical"]
     rx.risk_score = dosage_result["score"]
     rx.risk_level = determine_risk_level(dosage_result["score"], dosage_result["has_critical"])
@@ -137,7 +124,19 @@ def create_prescription_with_review(db: Session, payload: PrescriptionCreate) ->
     db.commit()
     db.refresh(rx)
 
-    # 3) 触发自动审核（配伍禁忌检测在 review_service 中完成）
     run_auto_review(db, rx)
 
     return rx
+
+
+def get_prescription_list(db: Session, status: str = None, patient_id: int = None) -> List[PrescriptionResponse]:
+    q = db.query(Prescription)
+    if status:
+        q = q.filter(Prescription.status == status)
+    if patient_id:
+        q = q.filter(Prescription.patient_id == patient_id)
+    return q.order_by(Prescription.created_at.desc()).all()
+
+
+def get_prescription_by_id(db: Session, prescription_id: int) -> Prescription:
+    return db.query(Prescription).filter(Prescription.id == prescription_id).first()

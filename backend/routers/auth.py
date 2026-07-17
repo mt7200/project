@@ -1,10 +1,12 @@
 """认证接口"""
-from fastapi import APIRouter, Depends, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from core.database import get_db
+from core.security import oauth2_scheme, require_current_user
 from schemas.auth import LoginRequest, LoginResponse, UserInfo
-from services.auth_service import authenticate_user, get_current_user
+from models.user import User
+from services.auth_service import authenticate_user, get_user_by_token
 
 router = APIRouter()
 
@@ -23,11 +25,10 @@ def logout():
 
 
 @router.get("/me", response_model=UserInfo)
-def get_current_user_info(authorization: str = Header(None), db: Session = Depends(get_db)):
-    if not authorization or not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="未提供认证令牌")
-    token = authorization.split(" ", 1)[1]
-    user = get_current_user(db, token)
-    if not user:
-        raise HTTPException(status_code=401, detail="无效的认证令牌")
-    return UserInfo(id=user.id, username=user.username, real_name=user.real_name, role=user.role)
+def get_current_user_info(current_user: User = Depends(require_current_user)):
+    return UserInfo(
+        id=current_user.id,
+        username=current_user.username,
+        real_name=current_user.real_name,
+        role=current_user.role,
+    )

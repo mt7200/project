@@ -1,12 +1,11 @@
 """审核相关 Schema"""
 from datetime import datetime
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class ReviewAction(BaseModel):
-    prescription_id: int
-    action: str  # approved / rejected
+    action: str = Field(..., description="approved / rejected")
     comment: Optional[str] = None
 
 
@@ -27,3 +26,15 @@ class ReviewItem(BaseModel):
     reviewer: Optional[str]
     created_at: datetime
     reviewed_at: Optional[datetime]
+
+
+class ReviewOut(BaseModel):
+    id: int
+    prescription_id: int
+    risk_level: str
+    review_status: str
+    comment: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True

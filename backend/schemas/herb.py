@@ -1,23 +1,26 @@
-"""药材 Pydantic Schema"""
-from datetime import datetime
-from typing import Optional
+"""药材相关 Schema"""
+from typing import List, Optional
 from pydantic import BaseModel
 
 
-class HerbOut(BaseModel):
-    id: int
+class HerbBase(BaseModel):
     name: str
-    category: str
+    category: Optional[str] = None
     nature: Optional[str] = None
     taste: Optional[str] = None
     meridian: Optional[str] = None
-    min_dosage: Optional[int] = None
-    max_dosage: Optional[int] = None
-    unit: Optional[str] = "g"
-    is_toxic: Optional[int] = 0
-    functions: Optional[str] = None
-    indications: Optional[str] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    min_dosage: Optional[float] = None
+    max_dosage: Optional[float] = None
+    unit: str = "g"
+    toxic: bool = False
+    incompatibilities: List[str] = []
+    synergies: List[str] = []
+    functions: List[str] = []
+    description: Optional[str] = None
 
-    model_config = {"from_attributes": True}
+
+class HerbOut(HerbBase):
+    id: int
+
+    class Config:
+        from_attributes = True
