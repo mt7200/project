@@ -1,4 +1,4 @@
-"""ORM 数据模型集合 (对应 15 张表)"""
+"""ORM 数据模型集合"""
 from models.user import User
 from models.patient import Patient
 from models.visit import Visit
@@ -12,11 +12,10 @@ from models.herb_incompatibility import HerbIncompatibility
 from models.formula_herb import FormulaHerb
 from models.prescription_item import PrescriptionItem
 from models.prescription_review import PrescriptionReview
-from models.syndrome_pattern import SyndromePatternRef
 
 __all__ = [
     "User", "Patient", "Visit", "Herb", "Formula",
     "Prescription", "EMR", "SyndromePattern", "SymptomDict",
     "DiagnosisResult", "HerbIncompatibility", "FormulaHerb",
-    "PrescriptionItem", "PrescriptionReview", "SyndromePatternRef",
+    "PrescriptionItem", "PrescriptionReview",
 ]

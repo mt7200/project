@@ -6,7 +6,7 @@ from core.database import Base
 
 
 class Patient(Base):
-    __tablename__ = "patients"
+    __tablename__ = "patient"
 
     id = Column(BigInteger, primary_key=True, index=True)
     name = Column(String(50), nullable=False)
