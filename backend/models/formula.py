@@ -5,7 +5,7 @@ from core.database import Base
 
 
 class Formula(Base):
-    __tablename__ = "formulas"
+    __tablename__ = "formula"
 
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(128), unique=True, nullable=False, index=True)

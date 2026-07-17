@@ -5,11 +5,11 @@ from core.database import Base
 
 
 class FormulaHerb(Base):
-    __tablename__ = "formula_herbs"
+    __tablename__ = "formula_herb"
 
     id = Column(Integer, primary_key=True, index=True)
-    formula_id = Column(Integer, ForeignKey("formulas.id"), nullable=False)
-    herb_id = Column(Integer, ForeignKey("herbs.id"), nullable=False)
+    formula_id = Column(Integer, ForeignKey("formula.id"), nullable=False)
+    herb_id = Column(Integer, ForeignKey("herb.id"), nullable=False)
     dosage = Column(String(20))
     sort_order = Column(Integer, default=0)
 
