@@ -3,13 +3,16 @@ from typing import Optional
 from sqlalchemy.orm import Session
 
 from models.user import User
-from core.security import verify_password, create_access_token
+from core.security import verify_password, create_access_token, decode_access_token
 from schemas.auth import LoginResponse, UserInfo
 
 
 def get_user_by_username(db: Session, username: str) -> Optional[User]:
-    # TODO: 实现
-    return None
+    return db.query(User).filter(User.username == username, User.is_active == True).first()
+
+
+def get_user_by_id(db: Session, user_id: int) -> Optional[User]:
+    return db.query(User).filter(User.id == user_id, User.is_active == True).first()
 
 
 def authenticate_user(db: Session, username: str, password: str) -> Optional[LoginResponse]:
@@ -22,3 +25,10 @@ def authenticate_user(db: Session, username: str, password: str) -> Optional[Log
         token=token,
         user=UserInfo(id=user.id, username=user.username, real_name=user.real_name, role=user.role),
     )
+
+
+def get_current_user(db: Session, token: str) -> Optional[User]:
+    user_id = decode_access_token(token)
+    if not user_id:
+        return None
+    return get_user_by_id(db, int(user_id))

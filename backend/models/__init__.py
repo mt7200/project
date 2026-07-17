@@ -7,8 +7,16 @@ from models.formula import Formula
 from models.prescription import Prescription
 from models.emr import EMR
 from models.dict import SyndromePattern, SymptomDict
+from models.diagnosis_result import DiagnosisResult
+from models.herb_incompatibility import HerbIncompatibility
+from models.formula_herb import FormulaHerb
+from models.prescription_item import PrescriptionItem
+from models.prescription_review import PrescriptionReview
+from models.syndrome_pattern import SyndromePatternRef
 
 __all__ = [
     "User", "Patient", "Visit", "Herb", "Formula",
     "Prescription", "EMR", "SyndromePattern", "SymptomDict",
+    "DiagnosisResult", "HerbIncompatibility", "FormulaHerb",
+    "PrescriptionItem", "PrescriptionReview", "SyndromePatternRef",
 ]
