@@ -1,1 +1,13 @@
 .idea/
+node_modules/
+frontend/node_modules/
+backend/__pycache__/
+backend/**/__pycache__/
+backend/.env
+.env
+*.pyc
+backend/.venv/
+frontend/.vite/
+frontend/dist/
+frontend/node_modules/
+1/
