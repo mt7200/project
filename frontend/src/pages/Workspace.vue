@@ -699,6 +699,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getVisits } from '@/api/visit'
+import { getSymptomList } from '@/api/symptom-dict'
+import { getSyndromePatterns } from '@/api/syndrome-pattern'
 
 const router = useRouter()
 
@@ -740,11 +743,13 @@ interface MergedHerb {
 interface MergedEffect { effect: string; isAI: boolean; cIdx: number; origIdx: number; isEditing: boolean }
 
 /* ============ Data ============ */
-const diagnosisResults: DiagnosisResult[] = [
+const mockDiagnosisResults: DiagnosisResult[] = [
   { pattern: '肝阳上亢证', confidence: 92, description: '肝阳偏亢，上扰头目，导致头晕头痛；肝肾阴虚，腰膝失养，故腰膝酸软。', symptoms: ['眩晕', '头痛', '失眠多梦', '腰膝酸软', '口苦咽干'] },
   { pattern: '阴虚阳亢证', confidence: 78, description: '阴液亏虚，阳气偏亢，虚热内生，上扰清窍。', symptoms: ['头晕耳鸣', '潮热盗汗', '五心烦热'] },
   { pattern: '肝郁气滞证', confidence: 65, description: '肝气郁结，气机不畅，情志不舒。', symptoms: ['胁肋胀痛', '胸闷善太息', '抑郁多疑'] },
 ]
+
+const diagnosisResults = ref<DiagnosisResult[]>([...mockDiagnosisResults])
 
 const patternToDiagnosis: Record<string, { diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }> = {
   '肝阳上亢证': { diagnosis: '高血压病', differentiation: '肝阳上亢证', treatmentMethod: '平肝潜阳，滋养肝肾', prescription: '天麻钩藤饮加减' },
@@ -786,7 +791,7 @@ const prescriptions: Prescription[] = [
 
 const pulseOptions = ['浮', '沉', '迟', '数', '弱', '弦', '滑', '涩', '紧', '缓', '细', '虚', '实']
 
-const emrPatientList = [
+const mockPatientList = [
   { id: 1, name: '张三', gender: '男', age: 45, diagnosis: '风寒感冒', status: '待诊断' },
   { id: 2, name: '李四', gender: '女', age: 38, diagnosis: '月经不调', status: '已诊断' },
   { id: 3, name: '王五', gender: '男', age: 62, diagnosis: '腰痛病', status: '已诊断' },
@@ -794,6 +799,8 @@ const emrPatientList = [
   { id: 5, name: '钱九', gender: '男', age: 35, diagnosis: '待查', status: '未诊断完成' },
   { id: 6, name: '孙七', gender: '男', age: 28, diagnosis: '咽喉炎', status: '已诊断' },
 ]
+
+const emrPatientList = ref([...mockPatientList])
 
 const prescriptionMock = {
   complaint: '咳嗽反复2周，夜间加重',
@@ -847,7 +854,7 @@ const prescriptionMock = {
 }
 
 /* ============ Tag Data ============ */
-const chiefComplaintTags = ['咳嗽','干咳','咳痰','夜咳','晨咳','咽干','咽痒','咽痛','痰中带血','声音嘶哑','咽部异物感','反复感冒','发热','喷嚏','流涕','鼻塞','头痛','头晕','耳鸣','汗多','盗汗','自汗','头汗','易汗出','胃胀','胃痛','胃不适','腹胀','腹痛','腹泻','恶心','呕吐','反酸','嗳气','烧心','纳差','便秘','便','便血','黑便','大便干','大便黏','五更泻','腹痛欲便','里急后重','排便不爽','溏结不调','胸闷','胸痛','心悸','气短','气喘','气促','眠差','眠浅','多梦','易醒','早醒','入睡困难','嗜睡','尿频','尿急','尿痛','尿不尽','尿灼热','尿分叉','夜尿多','尿浊','尿血','水肿','阳痿','遗精','早泄','肩痛','胁痛','背痛','腰痛','颈椎痛','关节痛','关节僵硬','四肢麻木','半身麻木','四肢无力','偏瘫','拘挛','眼干','口干','口苦','牙痛','齿衄','口疮','皮疹','斑疹','丘疹','风团','皮肤红斑','皮肤瘙痒','痛经','闭经','崩漏','月经量多','月经量少','月经提前','月经延后','经期错乱','带下量多','带下量少','带下异味','黄带','偶尔','1天','2天','3天','4天','5天','1周','2周','3周','1个月','2个月','3个月','半年','1年']
+let chiefComplaintTags: string[] = ['咳嗽','干咳','咳痰','夜咳','晨咳','咽干','咽痒','咽痛','痰中带血','声音嘶哑','咽部异物感','反复感冒','发热','喷嚏','流涕','鼻塞','头痛','头晕','耳鸣','汗多','盗汗','自汗','头汗','易汗出','胃胀','胃痛','胃不适','腹胀','腹痛','腹泻','恶心','呕吐','反酸','嗳气','烧心','纳差','便秘','便','便血','黑便','大便干','大便黏','五更泻','腹痛欲便','里急后重','排便不爽','溏结不调','胸闷','胸痛','心悸','气短','气喘','气促','眠差','眠浅','多梦','易醒','早醒','入睡困难','嗜睡','尿频','尿急','尿痛','尿不尽','尿灼热','尿分叉','夜尿多','尿浊','尿血','水肿','阳痿','遗精','早泄','肩痛','胁痛','背痛','腰痛','颈椎痛','关节痛','关节僵硬','四肢麻木','半身麻木','四肢无力','偏瘫','拘挛','眼干','口干','口苦','牙痛','齿衄','口疮','皮疹','斑疹','丘疹','风团','皮肤红斑','皮肤瘙痒','痛经','闭经','崩漏','月经量多','月经量少','月经提前','月经延后','经期错乱','带下量多','带下量少','带下异味','黄带','偶尔','1天','2天','3天','4天','5天','1周','2周','3周','1个月','2个月','3个月','半年','1年']
 
 const presentIllnessSections = [
   { label: '诱因', tags: ['无明显诱因','受凉','劳累','接触感冒患者','季节变化','淋雨'] },
@@ -856,14 +863,60 @@ const presentIllnessSections = [
   { label: '伴随', tags: ['流涕','咽痛','咳嗽','头痛','肌肉酸痛'] },
 ]
 
-const pastHistoryTags = ['高血压','高血脂','心脏病','糖尿病','痛风','精神疾病','脑梗死','肝炎','胃炎','肺结核','哮喘','鼻炎','甲亢','血液病']
+let pastHistoryTags: string[] = ['高血压','高血脂','心脏病','糖尿病','痛风','精神疾病','脑梗死','肝炎','胃炎','肺结核','哮喘','鼻炎','甲亢','血液病']
 
-const allergyTags = ['青霉素','链霉素','卡那霉素','林可霉素','左氧氟沙星','溴芬酸钠','阿托品','头孢类','磺胺类','酒精','碘伏','去痛片','扑热息痛','安痛定','安定','鲁米那','阿司匹林','普鲁卡因','花粉','霉菌','尘螨','毛皮屑','牛奶','鸡蛋','大豆','小麦','花生','鱼虾','坚果']
+let allergyTags: string[] = ['青霉素','链霉素','卡那霉素','林可霉素','左氧氟沙星','溴芬酸钠','阿托品','头孢类','磺胺类','酒精','碘伏','去痛片','扑热息痛','安痛定','安定','鲁米那','阿司匹林','普鲁卡因','花粉','霉菌','尘螨','毛皮屑','牛奶','鸡蛋','大豆','小麦','花生','鱼虾','坚果']
 
-const personalHistorySections = [
+let personalHistorySections: { label: string; tags: string[] }[] = [
   { label: '吸烟/饮酒', tags: ['吸烟','偶尔吸烟','长期吸烟','不饮酒','偶尔饮酒','长期饮酒'] },
   { label: '婚育', tags: ['未婚','已婚','未孕','备孕','怀孕','闭经','有早产史','有流产史','有痛经史'] },
 ]
+
+async function loadSymptomDict() {
+  try {
+    const symptoms = await getSymptomList({ limit: 500 }) as any as { category: string; subCategory?: string; label: string }[]
+    if (!symptoms || symptoms.length === 0) return
+
+    const grouped: Record<string, string[]> = {}
+    const structured: Record<string, Record<string, string[]>> = {}
+    for (const s of symptoms) {
+      if (!grouped[s.category]) grouped[s.category] = []
+      grouped[s.category].push(s.label)
+      if (s.subCategory) {
+        if (!structured[s.category]) structured[s.category] = {}
+        if (!structured[s.category][s.subCategory]) structured[s.category][s.subCategory] = []
+        structured[s.category][s.subCategory].push(s.label)
+      }
+    }
+
+    if (grouped['主诉']?.length) chiefComplaintTags = grouped['主诉']
+    if (grouped['既往史']?.length) pastHistoryTags = grouped['既往史']
+    if (grouped['过敏史']?.length) allergyTags = grouped['过敏史']
+    if (structured['个人史'] && Object.keys(structured['个人史']).length) {
+      personalHistorySections = Object.entries(structured['个人史']).map(([label, tags]) => ({ label, tags }))
+    } else if (grouped['个人史']?.length) {
+      personalHistorySections = [{ label: '个人史', tags: grouped['个人史'] }]
+    }
+  } catch {
+    // 接口不可用，保留 Mock
+  }
+}
+
+async function loadSyndromePatterns() {
+  try {
+    const patterns = await getSyndromePatterns({ limit: 100 }) as any as { patternName: string; differentiation?: string; keySymptoms?: string; treatmentMethod?: string }[]
+    if (!patterns || patterns.length === 0) return
+
+    diagnosisResults.value = patterns.map((p, index) => ({
+      pattern: p.patternName,
+      confidence: Math.max(95 - index * 5, 60),
+      description: p.differentiation || p.keySymptoms || p.treatmentMethod || '',
+      symptoms: p.keySymptoms ? p.keySymptoms.split(/[,，、]/).map(s => s.trim()).filter(Boolean) : [],
+    }))
+  } catch {
+    // 接口不可用，保留 Mock
+  }
+}
 
 const pulseDescriptionTags = ['弦细','滑数','沉迟','浮紧','细弱','洪大','濡缓','涩滞','虚浮','实有力']
 const tongueColorTags = ['淡','红','绛','紫','青']
@@ -986,10 +1039,10 @@ const wizardSteps = ['辨证诊断', '智能开方', '处方审核']
 let undoTimeout: ReturnType<typeof setTimeout> | null = null
 
 /* ============ Computed ============ */
-const selectedResult = computed(() => diagnosisResults.find(r => r.pattern === selectedPattern.value))
+const selectedResult = computed(() => diagnosisResults.value.find(r => r.pattern === selectedPattern.value))
 const pendingCount = computed(() => prescriptions.filter(p => p.status === 'pending').length)
 
-const selectedPatientInfo = computed(() => emrPatientList.find(x => x.id === selectedPatientFromBar.value) || null)
+const selectedPatientInfo = computed(() => emrPatientList.value.find(x => x.id === selectedPatientFromBar.value) || null)
 
 const tongueDisplay = computed(() => {
   let val = symptoms.value.tongueColor
@@ -1178,7 +1231,7 @@ function appendInquiry(label: string, v: string) {
   }
 }
 
-function selectPatientFromBar(patient: typeof emrPatientList[0]) {
+function selectPatientFromBar(patient: { id: number; name: string; gender: string; age: number; diagnosis: string; status: string }) {
   selectedPatientFromBar.value = patient.id
   form.value = { ...form.value, name: patient.name, gender: patient.gender === '男' ? 'male' : 'female', age: String(patient.age) }
 }
@@ -1547,7 +1600,31 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 尝试从后端获取就诊列表，失败则保留 Mock
+  try {
+    const visits = await getVisits({ limit: 50 }) as unknown as any[]
+    if (visits && visits.length > 0) {
+      emrPatientList.value = visits.map((v) => ({
+        id: v.id,
+        name: v.patientName || `患者#${v.patientId}`,
+        gender: v.patientGender || '',
+        age: v.patientAge || 0,
+        diagnosis: v.chiefComplaint || '',
+        status: v.status || '待诊',
+      }))
+    }
+  } catch {
+    // 接口不可用，保留 Mock
+    console.log('就诊接口暂不可用，使用 Mock 数据')
+  }
+
+  // 加载症状字典标签
+  await loadSymptomDict()
+
+  // 加载证型列表
+  await loadSyndromePatterns()
+
   const state = window.history.state as Record<string, unknown> | null
   const patient = state?.patient as { id: number; name: string; gender: string; age: number; diagnosis: string } | undefined
   if (patient) {

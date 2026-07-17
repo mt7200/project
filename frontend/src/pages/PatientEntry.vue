@@ -6,8 +6,11 @@
         <p>新建患者档案，采集基本信息和主诉</p>
       </div>
       <div class="header-actions">
-        <button class="btn-secondary">保存草稿</button>
-        <button class="btn-primary" @click="handleSubmit">保存并继续</button>
+        <button class="btn-secondary" @click="handleCancel">取消</button>
+            <button class="btn-secondary">保存草稿</button>
+            <button class="btn-primary" @click="handleSubmit" :disabled="loading">
+              {{ loading ? '保存中...' : '保存并继续' }}
+            </button>
       </div>
     </header>
 
@@ -539,6 +542,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
+function showMessage(type: 'success' | 'error' | 'info', message: string) {
+  const el = document.createElement('div')
+  el.style.cssText = `
+    position: fixed; top: 20px; right: 20px; z-index: 9999;
+    padding: 12px 24px; border-radius: 8px; font-size: 14px;
+    color: white; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    ${type === 'success' ? 'background: #52c41a;' : type === 'error' ? 'background: #ff4d4f;' : 'background: #1890ff;'}
+  `
+  el.textContent = message
+  document.body.appendChild(el)
+  setTimeout(() => el.remove(), 3000)
+}
+
 interface PatientForm {
   name: string
   gender: string
@@ -639,11 +655,150 @@ const symptoms = ref<SymptomForm>({
 
 const currentStep = ref(1)
 const step3Tab = ref<'chief' | 'four'>('chief')
+const loading = ref(false)
 
-const handleSubmit = () => {
-  console.log('Patient form submitted:', form.value)
-  console.log('Symptoms submitted:', symptoms.value)
-  alert('患者信息已保存！')
+interface PatientCreate {
+  name: string
+  gender?: string
+  birth_date?: string
+  phone?: string
+  id_card?: string
+  address?: string
+  allergy?: string
+  medical_history?: string
+}
+
+function validateForm(): boolean {
+  if (!form.value.name.trim()) {
+    showMessage('error', '请输入患者姓名')
+    return false
+  }
+  if (!form.value.gender) {
+    showMessage('error', '请选择性别')
+    return false
+  }
+  const age = parseInt(form.value.age)
+  if (!form.value.age || isNaN(age) || age < 0 || age > 120) {
+    showMessage('error', '请输入有效的年龄（0-120）')
+    return false
+  }
+  if (!form.value.phone.trim()) {
+    showMessage('error', '请输入联系电话')
+    return false
+  }
+  const phoneRegex = /^1[3-9]\d{9}$/
+  if (!phoneRegex.test(form.value.phone.replace(/\s/g, ''))) {
+    showMessage('error', '请输入有效的手机号码')
+    return false
+  }
+  if (form.value.idCard && form.value.idCard.length !== 18) {
+    showMessage('error', '身份证号码必须为18位')
+    return false
+  }
+  if (!form.value.chiefComplaint.trim()) {
+    showMessage('error', '请输入主诉')
+    return false
+  }
+  return true
+}
+
+function mockSavePatient(data: PatientCreate): Promise<{ success: boolean; message: string }> {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const success = Math.random() > 0.1
+      if (success) {
+        const saved = JSON.parse(localStorage.getItem('patient_mock_list') || '[]')
+        saved.push({ ...data, id: Date.now(), created_at: new Date().toISOString() })
+        localStorage.setItem('patient_mock_list', JSON.stringify(saved))
+        resolve({ success: true, message: '保存成功' })
+      } else {
+        resolve({ success: false, message: '保存失败，请稍后重试' })
+      }
+    }, 800)
+  })
+}
+
+async function handleSubmit() {
+  if (!validateForm()) return
+
+  loading.value = true
+  try {
+    const patientData: PatientCreate = {
+      name: form.value.name,
+      gender: form.value.gender,
+      birth_date: form.value.birthDate || undefined,
+      phone: form.value.phone,
+      id_card: form.value.idCard || undefined,
+      address: form.value.address || undefined,
+      allergy: form.value.allergyHistory || undefined,
+      medical_history: form.value.pastHistory || undefined,
+    }
+
+    const result = await mockSavePatient(patientData)
+    if (result.success) {
+      showMessage('success', result.message)
+    } else {
+      showMessage('error', result.message)
+    }
+  } catch {
+    showMessage('error', '保存失败，请稍后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
+function handleCancel() {
+  if (!confirm('确认取消？当前填写的信息将被清空。')) return
+  form.value = {
+    name: '',
+    gender: '',
+    age: '',
+    phone: '',
+    idCard: '',
+    birthDate: '',
+    occupation: '',
+    ethnicity: '汉族',
+    maritalStatus: '',
+    address: '',
+    emergencyContact: '',
+    emergencyPhone: '',
+    chiefComplaint: '',
+    presentIllness: '',
+    pastHistory: '',
+    familyHistory: '',
+    allergyHistory: '',
+    diagnosis: '',
+    differentiation: '',
+    treatmentMethod: '',
+    prescription: '',
+  }
+  symptoms.value = {
+    pulseLeft: '',
+    pulseRight: '',
+    pulseDescription: '',
+    tongueColor: '',
+    tongueShape: '',
+    tongueCoating: '',
+    tongueTexture: '',
+    tongueRemark: '',
+    facialColor: '',
+    expression: '',
+    mentalState: '',
+    breathSound: '',
+    speechSound: '',
+    sweating: '',
+    limbsTemperature: '',
+    sleepQuality: '',
+    appetite: '',
+    thirst: '',
+    taste: '',
+    bowelMovement: '',
+    urineColor: '',
+    menstrualCycle: '',
+  }
+  currentStep.value = 1
+  step3Tab.value = 'chief'
+  showMessage('info', '已清空表单')
 }
 
 const handleNext = () => {
