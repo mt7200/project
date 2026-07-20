@@ -1,0 +1,71 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 处方表 - prescription
+-- ============================================================
+
+-- 查询处方列表（分页）
+SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
+       pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
+FROM prescription p
+LEFT JOIN patient pat ON p.patient_id = pat.id
+LEFT JOIN sys_user u ON p.doctor_id = u.id
+LEFT JOIN formula f ON p.formula_id = f.id
+WHERE 1=1
+<if test="prescriptionNo != null and prescriptionNo != ''">
+    AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
+</if>
+<if test="patientId != null">
+    AND p.patient_id = #{patientId}
+</if>
+<if test="doctorId != null">
+    AND p.doctor_id = #{doctorId}
+</if>
+<if test="status != null and status != ''">
+    AND p.status = #{status}
+</if>
+ORDER BY p.created_at DESC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询处方总数
+SELECT COUNT(*)
+FROM prescription p
+WHERE 1=1
+<if test="prescriptionNo != null and prescriptionNo != ''">
+    AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
+</if>
+<if test="patientId != null">
+    AND p.patient_id = #{patientId}
+</if>
+<if test="doctorId != null">
+    AND p.doctor_id = #{doctorId}
+</if>
+<if test="status != null and status != ''">
+    AND p.status = #{status}
+</if>
+
+-- 根据ID查询处方详情
+SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
+       pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
+FROM prescription p
+LEFT JOIN patient pat ON p.patient_id = pat.id
+LEFT JOIN sys_user u ON p.doctor_id = u.id
+LEFT JOIN formula f ON p.formula_id = f.id
+WHERE p.id = #{id}
+
+-- 新增处方
+INSERT INTO prescription (prescription_no, patient_id, visit_id, doctor_id, formula_id, diagnosis, syndrome, notes, status)
+VALUES (#{prescriptionNo}, #{patientId}, #{visitId}, #{doctorId}, #{formulaId}, #{diagnosis}, #{syndrome}, #{notes}, #{status})
+
+-- 修改处方信息
+UPDATE prescription
+SET prescription_no = #{prescriptionNo},
+    formula_id = #{formulaId},
+    diagnosis = #{diagnosis},
+    syndrome = #{syndrome},
+    notes = #{notes},
+    status = #{status}
+WHERE id = #{id}
+
+-- 删除处方
+DELETE FROM prescription WHERE id = #{id}

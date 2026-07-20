@@ -1,0 +1,85 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 中药材表 - herb
+-- ============================================================
+
+-- 查询药材列表（分页）
+SELECT id, name, category, nature, taste, meridian, min_dosage, max_dosage, unit, is_toxic, functions, indications, created_at, updated_at
+FROM herb
+WHERE 1=1
+<if test="name != null and name != ''">
+    AND name LIKE CONCAT('%', #{name}, '%')
+</if>
+<if test="category != null and category != ''">
+    AND category = #{category}
+</if>
+<if test="nature != null and nature != ''">
+    AND nature = #{nature}
+</if>
+ORDER BY created_at DESC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询药材总数
+SELECT COUNT(*)
+FROM herb
+WHERE 1=1
+<if test="name != null and name != ''">
+    AND name LIKE CONCAT('%', #{name}, '%')
+</if>
+<if test="category != null and category != ''">
+    AND category = #{category}
+</if>
+<if test="nature != null and nature != ''">
+    AND nature = #{nature}
+</if>
+
+-- 根据ID查询药材详情
+SELECT id, name, category, nature, taste, meridian, min_dosage, max_dosage, unit, is_toxic, functions, indications, created_at, updated_at
+FROM herb
+WHERE id = #{id}
+
+-- ============================================================
+-- 方剂表 - formula
+-- ============================================================
+
+-- 查询方剂列表（分页）
+SELECT id, name, category_l1, category_l2, functions, indications, modifications, source, created_at, updated_at
+FROM formula
+WHERE 1=1
+<if test="name != null and name != ''">
+    AND name LIKE CONCAT('%', #{name}, '%')
+</if>
+<if test="categoryL1 != null and categoryL1 != ''">
+    AND category_l1 = #{categoryL1}
+</if>
+ORDER BY created_at DESC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询方剂总数
+SELECT COUNT(*)
+FROM formula
+WHERE 1=1
+<if test="name != null and name != ''">
+    AND name LIKE CONCAT('%', #{name}, '%')
+</if>
+<if test="categoryL1 != null and categoryL1 != ''">
+    AND category_l1 = #{categoryL1}
+</if>
+
+-- 根据ID查询方剂详情
+SELECT id, name, category_l1, category_l2, functions, indications, modifications, source, created_at, updated_at
+FROM formula
+WHERE id = #{id}
+
+-- ============================================================
+-- 方剂-药材关联表 - formula_herb
+-- ============================================================
+
+-- 查询方剂药材明细
+SELECT fh.id, fh.formula_id, fh.herb_id, fh.dosage, fh.sort_order,
+       h.name AS herb_name, h.category, h.nature, h.taste
+FROM formula_herb fh
+LEFT JOIN herb h ON fh.herb_id = h.id
+WHERE fh.formula_id = #{formulaId}
+ORDER BY fh.sort_order ASC

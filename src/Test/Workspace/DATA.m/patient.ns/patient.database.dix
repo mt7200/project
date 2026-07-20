@@ -1,0 +1,56 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 就诊记录表 - visit_record
+-- ============================================================
+
+-- 查询就诊记录列表（分页）
+SELECT vr.id, vr.patient_id, vr.doctor_id, vr.visit_date, vr.chief_complaint, vr.present_illness, vr.past_history, vr.allergy_history, vr.personal_history, vr.tongue_image, vr.pulse_image, vr.other_exams, vr.status, vr.created_at, vr.updated_at,
+       p.name AS patient_name, u.real_name AS doctor_name
+FROM visit_record vr
+LEFT JOIN patient p ON vr.patient_id = p.id
+LEFT JOIN sys_user u ON vr.doctor_id = u.id
+WHERE 1=1
+<if test="patientId != null">
+    AND vr.patient_id = #{patientId}
+</if>
+<if test="doctorId != null">
+    AND vr.doctor_id = #{doctorId}
+</if>
+<if test="status != null and status != ''">
+    AND vr.status = #{status}
+</if>
+<if test="visitDateStart != null">
+    AND vr.visit_date >= #{visitDateStart}
+</if>
+<if test="visitDateEnd != null">
+    AND vr.visit_date <= #{visitDateEnd}
+</if>
+ORDER BY vr.visit_date DESC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询就诊记录总数
+SELECT COUNT(*)
+FROM visit_record vr
+WHERE 1=1
+<if test="patientId != null">
+    AND vr.patient_id = #{patientId}
+</if>
+<if test="doctorId != null">
+    AND vr.doctor_id = #{doctorId}
+</if>
+<if test="status != null and status != ''">
+    AND vr.status = #{status}
+</if>
+
+-- 根据ID查询就诊记录详情
+SELECT vr.id, vr.patient_id, vr.doctor_id, vr.visit_date, vr.chief_complaint, vr.present_illness, vr.past_history, vr.allergy_history, vr.personal_history, vr.tongue_image, vr.pulse_image, vr.other_exams, vr.status, vr.created_at, vr.updated_at,
+       p.name AS patient_name, u.real_name AS doctor_name
+FROM visit_record vr
+LEFT JOIN patient p ON vr.patient_id = p.id
+LEFT JOIN sys_user u ON vr.doctor_id = u.id
+WHERE vr.id = #{id}
+
+-- 新增就诊记录
+INSERT INTO visit_record (patient_id, doctor_id, visit_date, chief_complaint, present_illness, past_history, allergy_history, personal_history, tongue_image, pulse_image, other_exams, status)
+VALUES (#{patientId}, #{doctorId}, #{visitDate}, #{chiefComplaint}, #{presentIllness}, #{pastHistory}, #{allergyHistory}, #{personalHistory}, #{tongueImage}, #{pulseImage}, #{otherExams}, #{status})

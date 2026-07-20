@@ -1,0 +1,7 @@
+{
+  "herb.database.dix": {
+    "host": "localhost",
+    "port": "3306",
+    "databaseName": "tcm_hospital"
+  }
+}

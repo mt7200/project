@@ -1,0 +1,71 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 辨证诊断结果表 - diagnosis_result
+-- ============================================================
+
+-- 查询诊断结果列表（按就诊记录）
+SELECT id, visit_id, pattern_name, pattern_code, confidence, description, symptoms, etiology, pathogenesis, is_selected, source, created_at
+FROM diagnosis_result
+WHERE visit_id = #{visitId}
+ORDER BY confidence DESC
+
+-- 根据ID查询诊断结果详情
+SELECT id, visit_id, pattern_name, pattern_code, confidence, description, symptoms, etiology, pathogenesis, is_selected, source, created_at
+FROM diagnosis_result
+WHERE id = #{id}
+
+-- 新增诊断结果
+INSERT INTO diagnosis_result (visit_id, pattern_name, pattern_code, confidence, description, symptoms, etiology, pathogenesis, is_selected, source)
+VALUES (#{visitId}, #{patternName}, #{patternCode}, #{confidence}, #{description}, #{symptoms}, #{etiology}, #{pathogenesis}, #{isSelected}, #{source})
+
+-- 修改诊断结果
+UPDATE diagnosis_result
+SET pattern_name = #{patternName},
+    pattern_code = #{patternCode},
+    confidence = #{confidence},
+    description = #{description},
+    symptoms = #{symptoms},
+    etiology = #{etiology},
+    pathogenesis = #{pathogenesis},
+    is_selected = #{isSelected}
+WHERE id = #{id}
+
+-- 删除诊断结果
+DELETE FROM diagnosis_result WHERE id = #{id}
+
+-- 批量删除某就诊记录的所有诊断结果
+DELETE FROM diagnosis_result WHERE visit_id = #{visitId}
+
+-- ============================================================
+-- 证型知识表 - syndrome_pattern
+-- ============================================================
+
+-- 查询证型列表（分页）
+SELECT id, pattern_name, pattern_code, category, etiology, pathogenesis, key_symptoms, pulse_pattern, tongue_pattern, differentiation, treatment_method, recommended_formula, related_diagnosis, sort_order, created_at, updated_at
+FROM syndrome_pattern
+WHERE 1=1
+<if test="patternName != null and patternName != ''">
+    AND pattern_name LIKE CONCAT('%', #{patternName}, '%')
+</if>
+<if test="category != null and category != ''">
+    AND category = #{category}
+</if>
+ORDER BY sort_order ASC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询证型总数
+SELECT COUNT(*)
+FROM syndrome_pattern
+WHERE 1=1
+<if test="patternName != null and patternName != ''">
+    AND pattern_name LIKE CONCAT('%', #{patternName}, '%')
+</if>
+<if test="category != null and category != ''">
+    AND category = #{category}
+</if>
+
+-- 根据ID查询证型详情
+SELECT id, pattern_name, pattern_code, category, etiology, pathogenesis, key_symptoms, pulse_pattern, tongue_pattern, differentiation, treatment_method, recommended_formula, related_diagnosis, sort_order, created_at, updated_at
+FROM syndrome_pattern
+WHERE id = #{id}

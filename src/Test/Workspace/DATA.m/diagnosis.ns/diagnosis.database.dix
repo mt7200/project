@@ -1,0 +1,28 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 症状/标签字典表 - symptom_dict
+-- ============================================================
+
+-- 查询症状字典列表（按分类）
+SELECT id, category, sub_category, label, sort_order, is_common, weight, created_at
+FROM symptom_dict
+WHERE 1=1
+<if test="category != null and category != ''">
+    AND category = #{category}
+</if>
+<if test="subCategory != null and subCategory != ''">
+    AND sub_category = #{subCategory}
+</if>
+<if test="label != null and label != ''">
+    AND label LIKE CONCAT('%', #{label}, '%')
+</if>
+<if test="isCommon != null">
+    AND is_common = #{isCommon}
+</if>
+ORDER BY sort_order ASC
+
+-- 根据ID查询症状详情
+SELECT id, category, sub_category, label, sort_order, is_common, weight, created_at
+FROM symptom_dict
+WHERE id = #{id}
