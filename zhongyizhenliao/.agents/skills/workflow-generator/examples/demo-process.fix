@@ -1,0 +1,169 @@
+{
+    "uniquekey": "bizProcess_1773200129010",
+    "name": "示例流程",
+    "description": "并行和条件分支示例流程",
+    "initNum": 16
+    "nodes": {
+        "HKFlow_node_1": {
+            "key": "HKFlow_node_1",
+            "name": "开始",
+            "left": 119,
+            "top": 188,
+            "type": "start",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_3": {
+            "key": "HKFlow_node_3",
+            "name": "结束",
+            "left": 983,
+            "top": 188,
+            "type": "end",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_4": {
+            "key": "HKFlow_node_4",
+            "name": "任务节点4",
+            "left": 265,
+            "top": 188,
+            "type": "task",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_5": {
+            "key": "HKFlow_node_5",
+            "name": "任务节点5",
+            "left": 463,
+            "top": 90,
+            "type": "task",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_6": {
+            "key": "HKFlow_node_6",
+            "name": "任务节点6",
+            "left": 463,
+            "top": 188,
+            "type": "task",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_7": {
+            "key": "HKFlow_node_7",
+            "name": "任务节点7",
+            "left": 463,
+            "top": 364,
+            "type": "task",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_12": {
+            "key": "HKFlow_node_12",
+            "name": "聚合节点",
+            "left": 646,
+            "top": 188,
+            "type": "join",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        },
+        "HKFlow_node_16": {
+            "key": "HKFlow_node_16",
+            "name": "任务节点16",
+            "left": 815,
+            "top": 188,
+            "type": "task",
+            "width": 60,
+            "height": 48,
+            "alt": true
+        }
+    },
+    "lines": {
+        "HKFlow_line_8": {
+            "type": "sl",
+            "from": "HKFlow_node_1",
+            "to": "HKFlow_node_4",
+            "name": "",
+            "lp": "176,186",
+            "mode": "common"
+        },
+        "HKFlow_line_9": {
+            "type": "sl",
+            "from": "HKFlow_node_4",
+            "to": "HKFlow_node_5",
+            "name": "",
+            "expr": "{\"description\":\"\",\"eMetric\":\"day\",\"eTime\":\"\",\"type\":\"expression\",\"value\":\"days==3\"}",
+            "lp": "348,137",
+            "mode": "common"
+        },
+        "HKFlow_line_10": {
+            "type": "sl",
+            "from": "HKFlow_node_4",
+            "to": "HKFlow_node_6",
+            "name": "",
+            "lp": "348,186",
+            "mode": "common"
+        },
+        "HKFlow_line_11": {
+            "type": "sl",
+            "from": "HKFlow_node_4",
+            "to": "HKFlow_node_7",
+            "name": "",
+            "lp": "348,274",
+            "mode": "common"
+        },
+        "HKFlow_line_13": {
+            "type": "sl",
+            "from": "HKFlow_node_5",
+            "to": "HKFlow_node_12",
+            "name": "",
+            "lp": "538.5,137",
+            "mode": "common"
+        },
+        "HKFlow_line_14": {
+            "type": "sl",
+            "from": "HKFlow_node_6",
+            "to": "HKFlow_node_12",
+            "name": "",
+            "lp": "538.5,186",
+            "mode": "common"
+        },
+        "HKFlow_line_15": {
+            "type": "sl",
+            "from": "HKFlow_node_7",
+            "to": "HKFlow_node_12",
+            "name": "",
+            "lp": "538.5,274",
+            "mode": "common"
+        },
+        "HKFlow_line_17": {
+            "type": "sl",
+            "from": "HKFlow_node_12",
+            "to": "HKFlow_node_16",
+            "name": "",
+            "lp": "714.5,186",
+            "mode": "common"
+        },
+        "HKFlow_line_18": {
+            "type": "sl",
+            "from": "HKFlow_node_16",
+            "to": "HKFlow_node_3",
+            "name": "",
+            "lp": "883,186",
+            "mode": "common"
+        }
+    },
+    "areas": {},
+    "config": {
+        "completeStatus": 1,
+        "completeCallback": 2,
+        "selectedNodes": []
+    }
+}

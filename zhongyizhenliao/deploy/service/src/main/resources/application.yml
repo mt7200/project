@@ -1,0 +1,87 @@
+# 默认激活开发环境
+spring.profiles.active: dev
+
+server:
+  port: 19385
+  servlet:
+    context-base: zhongyizhenliao
+    context-path: /${server.servlet.context-base}/service
+
+spring:
+  application:
+    code: zhongyizhenliao-service
+    name: 
+  config:
+    import: classpath:application-sysman.yml
+  web:
+    resources:
+      static-locations: classpath:/static/
+      
+liteflow:
+  ruleSource: classpath*:**/*.bflow.xml
+  print-execution-log: false  # 关闭组件执行详情日志
+  monitor:
+    enable-log: false         # 关闭监控统计日志
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [${spring.application.code}] [%thread] %-5level %logger{36} - %msg%n"
+
+cas:
+  client:
+    ignore-pattern: '/.*/CheckLogin(\.\w+)?(\?.*)?$|.*\.(css|js|html|ico|png|jpg|jpeg|gif|svg|woff2?|ttf)(\?.*)?$'
+# sa-token相关配置
+sa-token:
+  # 指定 Cookie 模式下自动填充 token 提交前缀
+  cookie-auto-fill-prefix: true
+  # 指定 token 提交时的前缀
+  token-prefix: Bearer
+  # token 名称（同时也是 cookie 名称）
+  token-name: Authorization
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: false
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: false
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: simple-uuid
+  # 是否打开自动续签（如果此值为 true，框架会在每次直接或间接调用 getLoginId() 时进行一次过期检查与续签操作）
+  auto-renew: true
+  # 是否输出操作日志
+  is-log: true
+  extension:
+    enabled: true
+    # 无需登录或者权限控制的资源
+    excludes:
+      - /
+      - /*/Login.*
+      - /*/CheckLogin.*
+      # // 排除静态资源目录（sa-token 不用加 serverContextPath 前缀但需要 / 开头）
+      - /static/**
+      - /assets/**
+      # // 排除根目录下的静态文件（sa-token 不用加 serverContextPath 前缀但需要 / 开头）
+      - /*.js
+      - /*.css
+      - /*.html
+      - /*.ico
+      - /*.png
+      - /*.jpg
+      - /*.jpeg
+      - /*.gif
+      - /*.svg
+      - /*.woff
+      - /*.woff2
+      - /*.ttf
+    demo-mode: false
+    # 演示模式下运行操作的 非 GET 资源请求
+    demo-mode-includes:
+      - /*/Login.*
+      - /*/Logout.*
+    # 基础权限
+    basic-permissions:
+      # 用户获取自身信息（直接填权限码即可）
+      - /*/UserInfo.*
+      - "*"

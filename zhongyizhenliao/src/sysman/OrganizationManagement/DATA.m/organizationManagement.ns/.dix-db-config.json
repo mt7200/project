@@ -1,0 +1,7 @@
+{
+  "selectDepartment.database.dix": {
+    "host": "www.sunsheen.cn",
+    "port": "13383",
+    "databaseName": "systest"
+  }
+}

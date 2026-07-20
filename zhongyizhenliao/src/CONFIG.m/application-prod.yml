@@ -1,0 +1,123 @@
+#应用部署的地址，不加context，斜杠结尾
+cas:
+  server:
+    url: https://portal.it.sunsheen.cn/cas
+  client:
+    host: http://portal.it.sunsheen.cn/
+    web-path: ${cas.client.host}${server.servlet.context-base}/
+    login-path: /login/cas
+    validation-type: CAS3
+
+#HKDAS相关配置,springboot同类项未配置相关信息使用HKDAS中的配置
+application:
+  registry:
+    address: 172.18.130.105:8999
+    client:
+      enabled: false
+  profile:cas:
+  server:
+    #CAS服务验证地址
+    url: http://portal.it.sunsheen.cn/cas
+  client:
+    #应用部署的地址，不要加context
+    host: http://portal.it.sunsheen.cn/
+    web-path: ${cas.client.host}${server.servlet.context-base}/
+    login-path: /login/cas
+    validation-type: CAS3
+    group: das
+    
+  #添加核格作用域下面的配置，优先级高于spring下的datasource配置
+  #数据库相关配置
+hearken:
+  #数据库相关配置
+  database:
+    #默认数据源
+    default:
+      dialect: MySQLDialect
+      driver-class-name: com.mysql.cj.jdbc.Driver
+      password: #{databasePassword}
+      username: #{databaseUser}
+      url: jdbc:mysql://#{databaseHost}:#{databasePort}/#{databaseName}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC
+      # 连接池配置
+      druid:
+        # 初始化连接数
+        initialSize: 5
+        #连接池中的最小空闲连接数
+        minIdle: 5
+        #控制连接池中的最大活动连接数
+        maxActive: 15
+        # 配置获取连接等待超时的时间
+        maxWait: 60000
+        # 配置间隔多久才进行一次检测，检测需要关闭的空闲连接，单位毫秒
+        timeBetweenEvictionRunsMillis: 60000
+        # 配置一个连接在池中最小生存时间
+        minEvictableIdleTimeMillis: 300000
+        testWhileIdle: true
+        testOnBorrow: false
+        # 打开 PSCache，并且指定每个连接上 PSCache 的大小
+        poolPreparedStatements: true
+        maxPoolPreparedStatementPerConnectionSize: 20
+        # 配置监控统计拦截的 Filter，去掉后监控界面 SQL 无法统计，wall 用于防火墙
+        filters: stat,wall,slf4j
+        # 通过 connectProperties 属性打开 mergeSql 功能；慢 SQL 记录
+        connectProperties: druid.stat.mergeSql\=true;druid.stat.slowSqlMillis\=5000  
+
+# sa-token相关配置
+sa-token:
+  # 指定 Cookie 模式下自动填充 token 提交前缀
+  cookie-auto-fill-prefix: true
+  # 指定 token 提交时的前缀
+  token-prefix: Bearer
+  # token 名称（同时也是 cookie 名称）
+  token-name: Authorization
+  # token 有效期（单位：秒） 默认30天，-1 代表永久有效
+  timeout: 2592000
+  # token 最低活跃频率（单位：秒），如果 token 超过此时间没有访问系统就会被冻结，默认-1 代表不限制，永不冻结
+  active-timeout: -1
+  # 是否允许同一账号多地同时登录 （为 true 时允许一起登录, 为 false 时新登录挤掉旧登录）
+  is-concurrent: false
+  # 在多人登录同一账号时，是否共用一个 token （为 true 时所有登录共用一个 token, 为 false 时每次登录新建一个 token）
+  is-share: false
+  # token 风格（默认可取值：uuid、simple-uuid、random-32、random-64、random-128、tik）
+  token-style: simple-uuid
+  # 是否打开自动续签（如果此值为 true，框架会在每次直接或间接调用 getLoginId() 时进行一次过期检查与续签操作）
+  auto-renew: true
+  # 是否输出操作日志
+  is-log: true
+  extension:
+    enabled: true
+    # 无需登录或者权限控制的资源
+    excludes:
+      - /
+      - /api/auth/login
+      - /api/auth/logout
+      # // 排除静态资源目录（sa-token 不用加 serverContextPath 前缀但需要 / 开头）
+      - /static/**
+      - /assets/**
+      # // 排除所有url，保证调试功能可用
+      - /**
+      # // 排除根目录下的静态文件（sa-token 不用加 serverContextPath 前缀但需要 / 开头）
+      - /*.js
+      - /*.css
+      - /*.html
+      - /*.ico
+      - /*.png
+      - /*.jpg
+      - /*.jpeg
+      - /*.gif
+      - /*.svg
+      - /*.woff
+      - /*.woff2
+      - /*.ttf
+      - /*.json
+    demo-mode: false
+    # 演示模式下运行操作的 非 GET 资源请求
+    demo-mode-includes:
+      - /api/auth/login
+      - /api/auth/logout
+    # 基础权限
+    basic-permissions:
+      # 用户获取自身信息（直接填权限码即可）
+      - user/info
+      - auth/getUserMenu
+      - "*"

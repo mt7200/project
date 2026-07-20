@@ -1,0 +1,135 @@
+{
+  "id": 5,
+  "uniquekey": "order-processing-with-subprocess",
+  "name": "Order Processing with Subprocess",
+  "description": "A workflow that uses subprocess nodes to reuse existing workflows",
+  "initNum": 7,
+  "nodes": {
+    "HKFlow_node_1": {
+      "key": "HKFlow_node_1",
+      "name": "开始",
+      "left": 100,
+      "top": 200,
+      "type": "start",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_2": {
+      "key": "HKFlow_node_2",
+      "name": "验证订单",
+      "left": 250,
+      "top": 200,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_3": {
+      "key": "HKFlow_node_3",
+      "name": "库存子流程",
+      "left": 400,
+      "top": 200,
+      "type": "subprocess",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_4": {
+      "key": "HKFlow_node_4",
+      "name": "支付子流程",
+      "left": 550,
+      "top": 200,
+      "type": "subprocess",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_5": {
+      "key": "HKFlow_node_5",
+      "name": "配送子流程",
+      "left": 700,
+      "top": 200,
+      "type": "subprocess",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_6": {
+      "key": "HKFlow_node_6",
+      "name": "自定义通知",
+      "left": 850,
+      "top": 200,
+      "type": "custom",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_7": {
+      "key": "HKFlow_node_7",
+      "name": "结束",
+      "left": 1000,
+      "top": 200,
+      "type": "end",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    }
+  },
+  "lines": {
+    "HKFlow_line_1": {
+      "type": "sl",
+      "from": "HKFlow_node_1",
+      "to": "HKFlow_node_2",
+      "name": "",
+      "lp": "175,200",
+      "mode": "common"
+    },
+    "HKFlow_line_2": {
+      "type": "sl",
+      "from": "HKFlow_node_2",
+      "to": "HKFlow_node_3",
+      "name": "",
+      "lp": "325,200",
+      "mode": "common"
+    },
+    "HKFlow_line_3": {
+      "type": "sl",
+      "from": "HKFlow_node_3",
+      "to": "HKFlow_node_4",
+      "name": "",
+      "lp": "475,200",
+      "mode": "common"
+    },
+    "HKFlow_line_4": {
+      "type": "sl",
+      "from": "HKFlow_node_4",
+      "to": "HKFlow_node_5",
+      "name": "",
+      "lp": "625,200",
+      "mode": "common"
+    },
+    "HKFlow_line_5": {
+      "type": "sl",
+      "from": "HKFlow_node_5",
+      "to": "HKFlow_node_6",
+      "name": "",
+      "lp": "775,200",
+      "mode": "common"
+    },
+    "HKFlow_line_6": {
+      "type": "sl",
+      "from": "HKFlow_node_6",
+      "to": "HKFlow_node_7",
+      "name": "",
+      "lp": "925,200",
+      "mode": "common"
+    }
+  },
+  "areas": {},
+  "config": {
+    "completeStatus": 1,
+    "completeCallback": 2,
+    "selectedNodes": []
+  }
+}

@@ -1,0 +1,14 @@
+
+/service/target/
+/service/.settings/
+/service/.project
+/service/.vscode/
+/service/.idea/
+/web/dist/
+/web/node_modules/
+.idea/
+.vscode/
+.eclipse/
+.classpath
+.settings/
+.DS_Store

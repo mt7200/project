@@ -1,0 +1,246 @@
+{
+  "uniquekey": "leave-request-approval-flow",
+  "name": "Leave Request Approval Flow",
+  "description": "A workflow for approving leave requests with multi-level approval based on leave duration",
+  "initNum": 11,
+  "nodes": {
+    "HKFlow_node_1": {
+      "key": "HKFlow_node_1",
+      "name": "开始",
+      "left": 100,
+      "top": 200,
+      "type": "start",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_2": {
+      "key": "HKFlow_node_2",
+      "name": "提交请假申请",
+      "left": 250,
+      "top": 200,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_3": {
+      "key": "HKFlow_node_3",
+      "name": "检查请假天数",
+      "left": 400,
+      "top": 200,
+      "type": "or",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_4": {
+      "key": "HKFlow_node_4",
+      "name": "经理审批",
+      "left": 550,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_5": {
+      "key": "HKFlow_node_5",
+      "name": "部门主管审批",
+      "left": 700,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_6": {
+      "key": "HKFlow_node_6",
+      "name": "人事审批",
+      "left": 850,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_7": {
+      "key": "HKFlow_node_7",
+      "name": "更新请假余额",
+      "left": 1000,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_8": {
+      "key": "HKFlow_node_8",
+      "name": "通知员工（已批准）",
+      "left": 1150,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_9": {
+      "key": "HKFlow_node_9",
+      "name": "通知团队成员",
+      "left": 1300,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_10": {
+      "key": "HKFlow_node_10",
+      "name": "通知员工（已拒绝）",
+      "left": 1150,
+      "top": 300,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_11": {
+      "key": "HKFlow_node_11",
+      "name": "结束",
+      "left": 1450,
+      "top": 200,
+      "type": "end",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    }
+  },
+  "lines": {
+    "HKFlow_line_1": {
+      "type": "sl",
+      "from": "HKFlow_node_1",
+      "to": "HKFlow_node_2",
+      "name": "",
+      "lp": "175,200",
+      "mode": "common"
+    },
+    "HKFlow_line_2": {
+      "type": "sl",
+      "from": "HKFlow_node_2",
+      "to": "HKFlow_node_3",
+      "name": "",
+      "lp": "325,200",
+      "mode": "common"
+    },
+    "HKFlow_line_3": {
+      "type": "sl",
+      "from": "HKFlow_node_3",
+      "to": "HKFlow_node_4",
+      "name": "",
+      "lp": "475,150",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"leaveDays>0\"}"
+    },
+    "HKFlow_line_4": {
+      "type": "sl",
+      "from": "HKFlow_node_4",
+      "to": "HKFlow_node_5",
+      "name": "",
+      "lp": "625,100",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true && leaveDays>3\"}"
+    },
+    "HKFlow_line_5": {
+      "type": "sl",
+      "from": "HKFlow_node_4",
+      "to": "HKFlow_node_6",
+      "name": "",
+      "lp": "700,150",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true && leaveDays<=3\"}"
+    },
+    "HKFlow_line_6": {
+      "type": "sl",
+      "from": "HKFlow_node_5",
+      "to": "HKFlow_node_6",
+      "name": "",
+      "lp": "775,100",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true\"}"
+    },
+    "HKFlow_line_7": {
+      "type": "sl",
+      "from": "HKFlow_node_6",
+      "to": "HKFlow_node_7",
+      "name": "",
+      "lp": "925,100",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true\"}"
+    },
+    "HKFlow_line_8": {
+      "type": "sl",
+      "from": "HKFlow_node_7",
+      "to": "HKFlow_node_8",
+      "name": "",
+      "lp": "1075,100",
+      "mode": "common"
+    },
+    "HKFlow_line_9": {
+      "type": "sl",
+      "from": "HKFlow_node_8",
+      "to": "HKFlow_node_9",
+      "name": "",
+      "lp": "1225,100",
+      "mode": "common"
+    },
+    "HKFlow_line_10": {
+      "type": "sl",
+      "from": "HKFlow_node_9",
+      "to": "HKFlow_node_11",
+      "name": "",
+      "lp": "1375,150",
+      "mode": "common"
+    },
+    "HKFlow_line_11": {
+      "type": "sl",
+      "from": "HKFlow_node_4",
+      "to": "HKFlow_node_10",
+      "name": "",
+      "lp": "850,200",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==false\"}"
+    },
+    "HKFlow_line_12": {
+      "type": "sl",
+      "from": "HKFlow_node_5",
+      "to": "HKFlow_node_10",
+      "name": "",
+      "lp": "925,200",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==false\"}"
+    },
+    "HKFlow_line_13": {
+      "type": "sl",
+      "from": "HKFlow_node_6",
+      "to": "HKFlow_node_10",
+      "name": "",
+      "lp": "1000,200",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==false\"}"
+    },
+    "HKFlow_line_14": {
+      "type": "sl",
+      "from": "HKFlow_node_10",
+      "to": "HKFlow_node_11",
+      "name": "",
+      "lp": "1300,250",
+      "mode": "common"
+    }
+  },
+  "areas": {},
+  "config": {
+    "completeStatus": 1,
+    "completeCallback": 2,
+    "selectedNodes": []
+  }
+}

@@ -1,0 +1,147 @@
+{
+  "uniquekey": "employee-leave-request-flow",
+  "name": "员工请假审批流程",
+  "description": "根据请假天数自动选择审批路径：≤3天由部门经理审批，>3天由公司领导审批，审批通过后需综合管理部备案",
+  "initNum": 7,
+  "nodes": {
+    "HKFlow_node_1": {
+      "key": "HKFlow_node_1",
+      "name": "开始",
+      "left": 100,
+      "top": 200,
+      "type": "start",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_2": {
+      "key": "HKFlow_node_2",
+      "name": "提交请假申请",
+      "left": 250,
+      "top": 200,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_3": {
+      "key": "HKFlow_node_3",
+      "name": "判断请假天数",
+      "left": 400,
+      "top": 200,
+      "type": "or",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_4": {
+      "key": "HKFlow_node_4",
+      "name": "部门经理审批",
+      "left": 550,
+      "top": 100,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_5": {
+      "key": "HKFlow_node_5",
+      "name": "公司领导审批",
+      "left": 550,
+      "top": 300,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_6": {
+      "key": "HKFlow_node_6",
+      "name": "综合管理部备案",
+      "left": 700,
+      "top": 200,
+      "type": "task",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    },
+    "HKFlow_node_7": {
+      "key": "HKFlow_node_7",
+      "name": "结束",
+      "left": 850,
+      "top": 200,
+      "type": "end",
+      "width": 60,
+      "height": 48,
+      "alt": true
+    }
+  },
+  "lines": {
+    "HKFlow_line_1": {
+      "type": "sl",
+      "from": "HKFlow_node_1",
+      "to": "HKFlow_node_2",
+      "name": "",
+      "lp": "175,200",
+      "mode": "common"
+    },
+    "HKFlow_line_2": {
+      "type": "sl",
+      "from": "HKFlow_node_2",
+      "to": "HKFlow_node_3",
+      "name": "",
+      "lp": "325,200",
+      "mode": "common"
+    },
+    "HKFlow_line_3": {
+      "type": "sl",
+      "from": "HKFlow_node_3",
+      "to": "HKFlow_node_4",
+      "name": "≤3天",
+      "lp": "475,150",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"leaveDays<=3\"}"
+    },
+    "HKFlow_line_4": {
+      "type": "sl",
+      "from": "HKFlow_node_3",
+      "to": "HKFlow_node_5",
+      "name": ">3天",
+      "lp": "475,250",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"leaveDays>3\"}"
+    },
+    "HKFlow_line_5": {
+      "type": "sl",
+      "from": "HKFlow_node_4",
+      "to": "HKFlow_node_6",
+      "name": "",
+      "lp": "625,150",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true\"}"
+    },
+    "HKFlow_line_6": {
+      "type": "sl",
+      "from": "HKFlow_node_5",
+      "to": "HKFlow_node_6",
+      "name": "",
+      "lp": "625,250",
+      "mode": "common",
+      "expr": "{\"type\":\"expression\",\"value\":\"approved==true\"}"
+    },
+    "HKFlow_line_7": {
+      "type": "sl",
+      "from": "HKFlow_node_6",
+      "to": "HKFlow_node_7",
+      "name": "",
+      "lp": "775,200",
+      "mode": "common"
+    }
+  },
+  "areas": {},
+  "config": {
+    "completeStatus": 1,
+    "completeCallback": 2,
+    "selectedNodes": []
+  },
+  "id": "206289611801104384"
+}

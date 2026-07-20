@@ -1,0 +1,5 @@
+{
+  "serverUrl": "http://localhost:8585",
+  "apiKey": "your-api-key-here",
+  "timeout": 30000
+}
