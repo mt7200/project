@@ -6,18 +6,18 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-@Service("PatientDeleteComponent")
-@BixComponentPackage(dirname = "tcm/patient", type = "BIZ")
-public class PatientDeleteComponent extends ABaseComponent {
+@Service("DiagnosisResultDeleteComponent")
+@BixComponentPackage(dirname = "tcm/diagnosis", type = "BIZ")
+public class DiagnosisResultDeleteComponent extends ABaseComponent {
 
     @Override
     @WebRemote(paramsType = {"data", "json"})
     @Params(@ParamItem(name = "data", type = "json"))
-    @Component(name = "PatientDeleteComponent", memo = "删除患者", type = "data")
+    @Component(name = "DiagnosisResultDeleteComponent", memo = "删除辨证诊断结果", type = "data")
     public Object run(Map param) {
         Map<String, Object> params = new HashMap<>();
         params.put("id", TcmParams.longValue(param, "id"));
-        int rows = executeDelete("patient/patient", params);
+        int rows = executeDelete("diagnosis/diagnosis", params);
         return TcmParams.ok(rows);
     }
 }

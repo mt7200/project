@@ -6,20 +6,17 @@ import org.springframework.stereotype.Service;
 
 import java.util.*;
 
-@Service("SymptomDictListComponent")
-@BixComponentPackage(dirname = "tcm/workspace", type = "BIZ")
-public class SymptomDictListComponent extends ABaseComponent {
+@Service("DiagnosisResultListComponent")
+@BixComponentPackage(dirname = "tcm/diagnosis", type = "BIZ")
+public class DiagnosisResultListComponent extends ABaseComponent {
 
     @Override
     @WebRemote(paramsType = {"data", "json"})
     @Params(@ParamItem(name = "data", type = "json"))
-    @Component(name = "SymptomDictListComponent", memo = "症状字典/标签查询", type = "data")
+    @Component(name = "DiagnosisResultListComponent", memo = "辨证诊断结果列表（按就诊记录）", type = "data")
     public Object run(Map param) {
         Map<String, Object> params = new HashMap<>();
-        params.put("category", TcmParams.string(param, "category"));
-        params.put("subCategory", TcmParams.string(param, "subCategory"));
-        params.put("label", TcmParams.string(param, "label"));
-        params.put("isCommon", TcmParams.integer(param, "isCommon"));
+        params.put("visitId", TcmParams.longValue(param, "visitId"));
         List<Map<String, Object>> list = executeSelect("diagnosis/diagnosis", params);
         return TcmParams.ok(list);
     }

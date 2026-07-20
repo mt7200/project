@@ -21,9 +21,8 @@ public class PatientListComponent extends ABaseComponent {
         params.put("status", TcmParams.string(param, "status"));
         params.put("offset", TcmParams.integer(param, "start") != null ? TcmParams.integer(param, "start") : 0);
         params.put("pageSize", TcmParams.integer(param, "limit") != null ? TcmParams.integer(param, "limit") : 10);
-        // 调用 DAO 执行 SQL 映射 (由开发者补充具体 DAO 调用)
-        // List<Map<String, Object>> list = executeSelect("patient/patient", params);
-        // long count = executeSelect("patient/patient", params);
-        return TcmParams.page(0, Collections.emptyList());
+        List<Map<String, Object>> list = executeSelect("patient/patient", params);
+        long count = executeSelect("patient/patient", params);
+        return TcmParams.page(count, list);
     }
 }

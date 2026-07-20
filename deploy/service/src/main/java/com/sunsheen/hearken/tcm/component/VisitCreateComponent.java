@@ -28,7 +28,7 @@ public class VisitCreateComponent extends ABaseComponent {
         params.put("pulseImage", TcmParams.string(param, "pulseImage"));
         params.put("otherExams", TcmParams.string(param, "otherExams"));
         params.put("status", "ongoing");
-        // int id = executeInsert("patient/patient", params);
-        return TcmParams.ok();
+        int id = executeInsert("patient/patient", params);
+        return TcmParams.ok(id);
     }
 }

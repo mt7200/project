@@ -28,7 +28,7 @@ public class PatientUpdateComponent extends ABaseComponent {
         params.put("weight", TcmParams.doubleValue(param, "weight"));
         params.put("allergy_info", TcmParams.string(param, "allergyInfo"));
         params.put("status", TcmParams.string(param, "status"));
-        // int rows = executeUpdate("patient/patient", params);
-        return TcmParams.ok();
+        int rows = executeUpdate("patient/patient", params);
+        return TcmParams.ok(rows);
     }
 }

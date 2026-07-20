@@ -39,9 +39,9 @@ public class EMRSaveComponent extends ABaseComponent {
         params.put("doctorId", TcmParams.longValue(param, "doctorId"));
         params.put("status", TcmParams.string(param, "status"));
         if (id != null) {
-            // int rows = executeUpdate("emr/emr", params);
+            int rows = executeUpdate("emr/emr", params);
         } else {
-            // int newId = executeInsert("emr/emr", params);
+            int newId = executeInsert("emr/emr", params);
         }
         return TcmParams.ok();
     }

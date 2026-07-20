@@ -20,8 +20,8 @@ public class SyndromePatternListComponent extends ABaseComponent {
         params.put("category", TcmParams.string(param, "category"));
         params.put("offset", TcmParams.integer(param, "start") != null ? TcmParams.integer(param, "start") : 0);
         params.put("pageSize", TcmParams.integer(param, "limit") != null ? TcmParams.integer(param, "limit") : 10);
-        // List<Map<String, Object>> list = executeSelect("diagnosis/diagnosis", params);
-        // long count = executeSelect("diagnosis/diagnosis", params);
-        return TcmParams.page(0, Collections.emptyList());
+        List<Map<String, Object>> list = executeSelect("diagnosis/diagnosis", params);
+        long count = executeSelect("diagnosis/diagnosis", params);
+        return TcmParams.page(count, list);
     }
 }

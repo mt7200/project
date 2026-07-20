@@ -28,7 +28,7 @@ public class PatientCreateComponent extends ABaseComponent {
         params.put("allergy_info", TcmParams.string(param, "allergyInfo"));
         params.put("status", "active");
         params.put("createdBy", TcmParams.longValue(param, "createdBy"));
-        // int rows = executeInsert("patient/patient", params);
-        return TcmParams.ok();
+        int rows = executeInsert("patient/patient", params);
+        return TcmParams.ok(rows);
     }
 }

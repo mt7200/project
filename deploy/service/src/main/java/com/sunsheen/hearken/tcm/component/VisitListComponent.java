@@ -23,8 +23,8 @@ public class VisitListComponent extends ABaseComponent {
         params.put("visitDateEnd", TcmParams.string(param, "visitDateEnd"));
         params.put("offset", TcmParams.integer(param, "start") != null ? TcmParams.integer(param, "start") : 0);
         params.put("pageSize", TcmParams.integer(param, "limit") != null ? TcmParams.integer(param, "limit") : 10);
-        // List<Map<String, Object>> list = executeSelect("patient/patient", params);
-        // long count = executeSelect("patient/patient", params);
-        return TcmParams.page(0, Collections.emptyList());
+        List<Map<String, Object>> list = executeSelect("patient/patient", params);
+        long count = executeSelect("patient/patient", params);
+        return TcmParams.page(count, list);
     }
 }

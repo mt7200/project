@@ -17,7 +17,7 @@ public class EMRDetailComponent extends ABaseComponent {
     public Object run(Map param) {
         Map<String, Object> params = new HashMap<>();
         params.put("id", TcmParams.longValue(param, "id"));
-        // Map<String, Object> result = executeSelect("emr/emr", params);
-        return TcmParams.ok(Collections.emptyMap());
+        Map<String, Object> result = executeSelect("emr/emr", params);
+        return TcmParams.ok(result);
     }
 }
