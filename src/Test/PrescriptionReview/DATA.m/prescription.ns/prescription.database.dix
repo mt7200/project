@@ -1,0 +1,71 @@
+## 数据映射文件(database)，创建于2026/7/20 15:35:00
+
+-- ============================================================
+-- 处方审核记录表 - prescription_review
+-- ============================================================
+
+-- 查询处方审核列表（分页）
+SELECT pr.id, pr.prescription_id, pr.reviewer_id, pr.review_status, pr.review_comment, pr.risk_score, pr.incompatibility_found, pr.dosage_warnings, pr.reviewed_at, pr.created_at, pr.updated_at,
+       p.prescription_no, u.real_name AS reviewer_name
+FROM prescription_review pr
+LEFT JOIN prescription p ON pr.prescription_id = p.id
+LEFT JOIN sys_user u ON pr.reviewer_id = u.id
+WHERE 1=1
+<if test="prescriptionId != null">
+    AND pr.prescription_id = #{prescriptionId}
+</if>
+<if test="reviewStatus != null and reviewStatus != ''">
+    AND pr.review_status = #{reviewStatus}
+</if>
+ORDER BY pr.created_at DESC
+LIMIT #{offset}, #{pageSize}
+
+-- 查询处方审核总数
+SELECT COUNT(*)
+FROM prescription_review pr
+WHERE 1=1
+<if test="prescriptionId != null">
+    AND pr.prescription_id = #{prescriptionId}
+</if>
+<if test="reviewStatus != null and reviewStatus != ''">
+    AND pr.review_status = #{reviewStatus}
+</if>
+
+-- 根据ID查询处方审核详情
+SELECT pr.id, pr.prescription_id, pr.reviewer_id, pr.review_status, pr.review_comment, pr.risk_score, pr.incompatibility_found, pr.dosage_warnings, pr.reviewed_at, pr.created_at, pr.updated_at,
+       p.prescription_no, u.real_name AS reviewer_name
+FROM prescription_review pr
+LEFT JOIN prescription p ON pr.prescription_id = p.id
+LEFT JOIN sys_user u ON pr.reviewer_id = u.id
+WHERE pr.id = #{id}
+
+-- 新增处方审核记录
+INSERT INTO prescription_review (prescription_id, reviewer_id, review_status, review_comment, risk_score, incompatibility_found, dosage_warnings, reviewed_at)
+VALUES (#{prescriptionId}, #{reviewerId}, #{reviewStatus}, #{reviewComment}, #{riskScore}, #{incompatibilityFound}, #{dosageWarnings}, #{reviewedAt})
+
+-- 修改处方审核记录
+UPDATE prescription_review
+SET review_status = #{reviewStatus},
+    review_comment = #{reviewComment},
+    risk_score = #{riskScore},
+    incompatibility_found = #{incompatibilityFound},
+    dosage_warnings = #{dosageWarnings},
+    reviewed_at = #{reviewedAt}
+WHERE id = #{id}
+
+-- 批量查询配伍禁忌项（按处方ID）
+SELECT hi.herb_a_id, hi.herb_b_id, hi.incompatibility_type, hi.severity, hi.description,
+       ha.name AS herb_a_name, hb.name AS herb_b_name
+FROM herb_incompatibility hi
+LEFT JOIN herb ha ON hi.herb_a_id = ha.id
+LEFT JOIN herb hb ON hi.herb_b_id = hb.id
+WHERE (hi.herb_a_id IN
+    <foreach collection="herbIds" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+    OR hi.herb_b_id IN
+    <foreach collection="herbIds" item="id" open="(" separator="," close=")">
+        #{id}
+    </foreach>
+)
+ORDER BY hi.severity DESC
