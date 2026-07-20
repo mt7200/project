@@ -7,7 +7,7 @@ from core.database import get_db
 from models.emr import EMR
 from models.user import User
 from schemas.emr import EMRCreate, EMRUpdate, EMROut, HistoryRecordOut
-from services.auth_service import require_auth
+from core.security import require_current_user
 
 router = APIRouter()
 
@@ -19,7 +19,7 @@ def list_emrs(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """获取病历列表，支持按患者和状态筛选"""
     query = db.query(EMR)
@@ -35,7 +35,7 @@ def list_emrs(
 def get_emr(
     emr_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """获取病历详情"""
     record = db.query(EMR).filter(EMR.id == emr_id).first()
@@ -48,7 +48,7 @@ def get_emr(
 def create_emr(
     payload: EMRCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """创建病历"""
     record = EMR(**payload.model_dump())
@@ -63,7 +63,7 @@ def update_emr(
     emr_id: int,
     payload: EMRUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """更新病历"""
     record = db.query(EMR).filter(EMR.id == emr_id).first()
@@ -80,7 +80,7 @@ def update_emr(
 def delete_emr(
     emr_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """删除病历"""
     record = db.query(EMR).filter(EMR.id == emr_id).first()
@@ -95,7 +95,7 @@ def delete_emr(
 def get_history_records(
     emr_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
+    _: User = Depends(require_current_user),
 ):
     """查询同患者的历史诊疗记录（排除自身）"""
     record = db.query(EMR).filter(EMR.id == emr_id).first()

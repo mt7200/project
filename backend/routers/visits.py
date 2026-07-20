@@ -7,7 +7,7 @@ from core.database import get_db
 from models.visit import Visit
 from models.user import User
 from schemas.visit import VisitCreate, VisitUpdate, VisitOut
-from services.auth_service import require_auth
+from core.security import oauth2_scheme
 
 router = APIRouter()
 
@@ -19,9 +19,7 @@ def list_visits(
     skip: int = 0,
     limit: int = 50,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
 ):
-    """获取就诊记录列表，支持按患者和状态筛选"""
     query = db.query(Visit)
     if patient_id is not None:
         query = query.filter(Visit.patient_id == patient_id)
@@ -35,9 +33,7 @@ def list_visits(
 def get_visit(
     visit_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
 ):
-    """获取就诊记录详情"""
     visit = db.query(Visit).filter(Visit.id == visit_id).first()
     if not visit:
         raise HTTPException(status_code=404, detail="就诊记录不存在")
@@ -48,9 +44,7 @@ def get_visit(
 def create_visit(
     payload: VisitCreate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
 ):
-    """创建就诊记录"""
     visit = Visit(**payload.model_dump())
     db.add(visit)
     db.commit()
@@ -63,9 +57,7 @@ def update_visit(
     visit_id: int,
     payload: VisitUpdate,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
 ):
-    """更新就诊记录"""
     visit = db.query(Visit).filter(Visit.id == visit_id).first()
     if not visit:
         raise HTTPException(status_code=404, detail="就诊记录不存在")
@@ -80,9 +72,7 @@ def update_visit(
 def delete_visit(
     visit_id: int,
     db: Session = Depends(get_db),
-    _: User = Depends(require_auth),
 ):
-    """删除就诊记录"""
     visit = db.query(Visit).filter(Visit.id == visit_id).first()
     if not visit:
         raise HTTPException(status_code=404, detail="就诊记录不存在")

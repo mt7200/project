@@ -1,6 +1,5 @@
-"""方剂表 ORM"""
-from sqlalchemy import Column, Integer, String, Text, JSON
-
+from datetime import datetime
+from sqlalchemy import Column, Integer, String, Text, DateTime
 from core.database import Base
 
 
@@ -8,9 +7,12 @@ class Formula(Base):
     __tablename__ = "formula"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(128), unique=True, nullable=False, index=True)
-    category = Column(String(32))  # 和解剂/补益剂/解表剂...
-    herbs = Column(JSON)  # 组成药材名列表
-    indications = Column(Text)  # 主治
-    usage = Column(Text)  # 用法
-    description = Column(Text)
+    name = Column(String(100), unique=True, nullable=False, index=True)
+    category_l1 = Column(String(50))
+    category_l2 = Column(String(50))
+    functions = Column(Text)
+    indications = Column(Text)
+    modifications = Column(Text)
+    source = Column(String(200))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

@@ -699,6 +699,12 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { getHerbs } from '@/api/herb'
+import { getFormulas } from '@/api/formula'
+import { getPatients } from '@/api/patient'
+import { getPrescriptions } from '@/api/prescription'
+import { getSymptomDict, getSyndromePatterns } from '@/api/dict'
+import type { Patient } from '@/types/patient'
 
 const router = useRouter()
 
@@ -722,7 +728,7 @@ interface CustomDiagnosis { id: string; pattern: string; description: string; sy
 interface Herb {
   id: number; name: string; category: string; nature: string; taste: string; meridian: string
   minDosage: number; maxDosage: number; unit: string; toxic: boolean
-  incompatibilities: string[]; synergies: string[]; functions: string[]
+  functions: string[]
 }
 interface SelectedHerb extends Herb { currentDosage: number }
 interface Prescription {
@@ -746,54 +752,17 @@ const diagnosisResults: DiagnosisResult[] = [
   { pattern: '肝郁气滞证', confidence: 65, description: '肝气郁结，气机不畅，情志不舒。', symptoms: ['胁肋胀痛', '胸闷善太息', '抑郁多疑'] },
 ]
 
-const patternToDiagnosis: Record<string, { diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }> = {
-  '肝阳上亢证': { diagnosis: '高血压病', differentiation: '肝阳上亢证', treatmentMethod: '平肝潜阳，滋养肝肾', prescription: '天麻钩藤饮加减' },
-  '阴虚阳亢证': { diagnosis: '高血压病', differentiation: '阴虚阳亢证', treatmentMethod: '滋阴潜阳', prescription: '镇肝熄风汤加减' },
-  '肝郁气滞证': { diagnosis: '郁证', differentiation: '肝郁气滞证', treatmentMethod: '疏肝解郁，理气畅中', prescription: '柴胡疏肝散加减' },
-}
+const patternToDiagnosis = ref<Record<string, { diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }>>({})
 
-const herbDatabase: Herb[] = [
-  { id: 1, name: '柴胡', category: '解表药', nature: '微寒', taste: '辛苦', meridian: '肝、胆', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['黄芩', '半夏'], functions: ['疏散退热', '疏肝解郁'] },
-  { id: 2, name: '黄芩', category: '清热药', nature: '寒', taste: '苦', meridian: '肺、胆、胃', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['柴胡', '黄连'], functions: ['清热燥湿', '泻火解毒'] },
-  { id: 3, name: '党参', category: '补虚药', nature: '平', taste: '甘', meridian: '脾、肺', minDosage: 9, maxDosage: 30, unit: 'g', toxic: false, incompatibilities: ['藜芦'], synergies: ['黄芪', '白术'], functions: ['补中益气', '健脾益肺'] },
-  { id: 4, name: '半夏', category: '化痰药', nature: '温', taste: '辛', meridian: '脾、胃、肺', minDosage: 3, maxDosage: 9, unit: 'g', toxic: true, incompatibilities: ['乌头', '附子'], synergies: ['陈皮', '茯苓'], functions: ['燥湿化痰', '降逆止呕'] },
-  { id: 5, name: '附子', category: '温里药', nature: '大热', taste: '辛甘', meridian: '心、肾、脾', minDosage: 3, maxDosage: 15, unit: 'g', toxic: true, incompatibilities: ['半夏', '瓜蒌', '川贝母'], synergies: ['干姜', '肉桂'], functions: ['回阳救逆', '补火助阳'] },
-  { id: 6, name: '当归', category: '补虚药', nature: '温', taste: '甘辛', meridian: '肝、心、脾', minDosage: 6, maxDosage: 12, unit: 'g', toxic: false, incompatibilities: [], synergies: ['川芎', '白芍'], functions: ['补血活血', '调经止痛'] },
-  { id: 7, name: '炙甘草', category: '补虚药', nature: '平', taste: '甘', meridian: '心、肺、脾', minDosage: 1.5, maxDosage: 9, unit: 'g', toxic: false, incompatibilities: ['甘遂', '大戟', '芫花'], synergies: [], functions: ['补脾益气', '调和诸药'] },
-  { id: 8, name: '黄芪', category: '补虚药', nature: '微温', taste: '甘', meridian: '肺、脾', minDosage: 9, maxDosage: 30, unit: 'g', toxic: false, incompatibilities: [], synergies: ['党参', '白术'], functions: ['补气升阳', '固表止汗'] },
-  { id: 9, name: '白芍', category: '补虚药', nature: '微寒', taste: '苦酸', meridian: '肝、脾', minDosage: 6, maxDosage: 15, unit: 'g', toxic: false, incompatibilities: ['藜芦'], synergies: ['当归', '川芎'], functions: ['养血调经', '柔肝止痛'] },
-  { id: 10, name: '桂枝', category: '解表药', nature: '温', taste: '辛甘', meridian: '心、肺、膀胱', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['白芍', '生姜'], functions: ['发汗解肌', '温经通脉'] },
-  { id: 11, name: '生姜', category: '解表药', nature: '微温', taste: '辛', meridian: '肺、脾、胃', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['桂枝', '大枣'], functions: ['解表散寒', '温中止呕'] },
-  { id: 12, name: '大枣', category: '补虚药', nature: '温', taste: '甘', meridian: '脾、胃', minDosage: 6, maxDosage: 15, unit: 'g', toxic: false, incompatibilities: [], synergies: ['生姜', '炙甘草'], functions: ['补中益气', '养血安神'] },
-  { id: 13, name: '茯苓', category: '利水渗湿药', nature: '平', taste: '甘淡', meridian: '心、脾、肾', minDosage: 9, maxDosage: 15, unit: 'g', toxic: false, incompatibilities: [], synergies: ['白术', '党参'], functions: ['利水渗湿', '健脾宁心'] },
-  { id: 14, name: '川芎', category: '活血化瘀药', nature: '温', taste: '辛', meridian: '肝、胆', minDosage: 3, maxDosage: 10, unit: 'g', toxic: false, incompatibilities: [], synergies: ['当归', '白芍'], functions: ['活血行气', '祛风止痛'] },
-  { id: 15, name: '熟地黄', category: '补虚药', nature: '微温', taste: '甘', meridian: '肝、肾', minDosage: 9, maxDosage: 30, unit: 'g', toxic: false, incompatibilities: [], synergies: ['当归', '山茱萸'], functions: ['补血滋阴', '益精填髓'] },
-]
+const herbDatabase = ref<Herb[]>([])
 
-const commonFormulas = [
-  { name: '小柴胡汤', category: '和解剂', herbs: ['柴胡', '黄芩', '党参', '半夏', '炙甘草', '生姜', '大枣'] },
-  { name: '四物汤', category: '补益剂', herbs: ['当归', '川芎', '白芍', '熟地黄'] },
-  { name: '桂枝汤', category: '解表剂', herbs: ['桂枝', '白芍', '炙甘草', '生姜', '大枣'] },
-  { name: '逍遥散', category: '和解剂', herbs: ['柴胡', '当归', '白芍', '白术', '茯苓', '炙甘草'] },
-]
+const commonFormulas = ref<{ name: string; category: string; categoryL2: string; herbs: string[] }[]>([])
 
-const prescriptions: Prescription[] = [
-  { id: 1, patientName: '张三', patientAge: 45, patientGender: '男', diagnosis: '风寒感冒', syndrome: '风寒束表证', herbs: ['麻黄', '桂枝', '杏仁', '甘草', '生姜'], riskLevel: 'high', riskScore: 78, status: 'pending', date: '2026-05-05 14:30', compatibilityRisk: true, dosageRisk: true, contraindicationRisk: false, risks: ['麻黄用量超出药典上限（12g > 10g）', '麻黄与桂枝配伍辛温过强'], suggestions: ['建议将麻黄减量至9g', '考虑添加白芍以制约辛温太过'] },
-  { id: 2, patientName: '李四', patientAge: 38, patientGender: '女', diagnosis: '月经不调', syndrome: '肝郁血虚证', herbs: ['当归', '川芎', '白芍', '柴胡', '茯苓', '白术', '炙甘草'], riskLevel: 'low', riskScore: 12, status: 'approved', date: '2026-05-04 10:15', compatibilityRisk: false, dosageRisk: false, contraindicationRisk: false, risks: [], suggestions: [] },
-  { id: 3, patientName: '王五', patientAge: 62, patientGender: '男', diagnosis: '慢性支气管炎', syndrome: '痰湿阻肺证', herbs: ['半夏', '陈皮', '茯苓', '甘草', '细辛', '五味子'], riskLevel: 'medium', riskScore: 45, status: 'pending', date: '2026-05-04 16:20', compatibilityRisk: true, dosageRisk: false, contraindicationRisk: true, risks: ['半夏与甘草配伍需注意比例', '细辛含马兜铃酸成分需关注'], suggestions: ['半夏建议炮制后使用', '细辛用量建议控制在3g以内'] },
-  { id: 4, patientName: '赵六', patientAge: 55, patientGender: '女', diagnosis: '高血压', syndrome: '肝阳上亢证', herbs: ['天麻', '钩藤', '石决明', '栀子', '黄芩', '川牛膝', '杜仲'], riskLevel: 'low', riskScore: 18, status: 'approved', date: '2026-05-03 09:00', compatibilityRisk: false, dosageRisk: false, contraindicationRisk: false, risks: [], suggestions: [] },
-]
+const prescriptions = ref<Prescription[]>([])
 
 const pulseOptions = ['浮', '沉', '迟', '数', '弱', '弦', '滑', '涩', '紧', '缓', '细', '虚', '实']
 
-const emrPatientList = [
-  { id: 1, name: '张三', gender: '男', age: 45, diagnosis: '风寒感冒', status: '待诊断' },
-  { id: 2, name: '李四', gender: '女', age: 38, diagnosis: '月经不调', status: '已诊断' },
-  { id: 3, name: '王五', gender: '男', age: 62, diagnosis: '腰痛病', status: '已诊断' },
-  { id: 4, name: '赵六', gender: '女', age: 55, diagnosis: '高血压', status: '可复诊' },
-  { id: 5, name: '钱九', gender: '男', age: 35, diagnosis: '待查', status: '未诊断完成' },
-  { id: 6, name: '孙七', gender: '男', age: 28, diagnosis: '咽喉炎', status: '已诊断' },
-]
+const emrPatientList = ref<Patient[]>([])
 
 const prescriptionMock = {
   complaint: '咳嗽反复2周，夜间加重',
@@ -846,24 +815,24 @@ const prescriptionMock = {
   ],
 }
 
-/* ============ Tag Data ============ */
-const chiefComplaintTags = ['咳嗽','干咳','咳痰','夜咳','晨咳','咽干','咽痒','咽痛','痰中带血','声音嘶哑','咽部异物感','反复感冒','发热','喷嚏','流涕','鼻塞','头痛','头晕','耳鸣','汗多','盗汗','自汗','头汗','易汗出','胃胀','胃痛','胃不适','腹胀','腹痛','腹泻','恶心','呕吐','反酸','嗳气','烧心','纳差','便秘','便','便血','黑便','大便干','大便黏','五更泻','腹痛欲便','里急后重','排便不爽','溏结不调','胸闷','胸痛','心悸','气短','气喘','气促','眠差','眠浅','多梦','易醒','早醒','入睡困难','嗜睡','尿频','尿急','尿痛','尿不尽','尿灼热','尿分叉','夜尿多','尿浊','尿血','水肿','阳痿','遗精','早泄','肩痛','胁痛','背痛','腰痛','颈椎痛','关节痛','关节僵硬','四肢麻木','半身麻木','四肢无力','偏瘫','拘挛','眼干','口干','口苦','牙痛','齿衄','口疮','皮疹','斑疹','丘疹','风团','皮肤红斑','皮肤瘙痒','痛经','闭经','崩漏','月经量多','月经量少','月经提前','月经延后','经期错乱','带下量多','带下量少','带下异味','黄带','偶尔','1天','2天','3天','4天','5天','1周','2周','3周','1个月','2个月','3个月','半年','1年']
+/* ============ Tag Data (from API, fallback to hardcoded) ============ */
+const chiefComplaintTags = ref(['咳嗽','干咳','咳痰','夜咳','晨咳','咽干','咽痒','咽痛','痰中带血','声音嘶哑','咽部异物感','反复感冒','发热','喷嚏','流涕','鼻塞','头痛','头晕','耳鸣','汗多','盗汗','自汗','头汗','易汗出','胃胀','胃痛','胃不适','腹胀','腹痛','腹泻','恶心','呕吐','反酸','嗳气','烧心','纳差','便秘','便','便血','黑便','大便干','大便黏','五更泻','腹痛欲便','里急后重','排便不爽','溏结不调','胸闷','胸痛','心悸','气短','气喘','气促','眠差','眠浅','多梦','易醒','早醒','入睡困难','嗜睡','尿频','尿急','尿痛','尿不尽','尿灼热','尿分叉','夜尿多','尿浊','尿血','水肿','阳痿','遗精','早泄','肩痛','胁痛','背痛','腰痛','颈椎痛','关节痛','关节僵硬','四肢麻木','半身麻木','四肢无力','偏瘫','拘挛','眼干','口干','口苦','牙痛','齿衄','口疮','皮疹','斑疹','丘疹','风团','皮肤红斑','皮肤瘙痒','痛经','闭经','崩漏','月经量多','月经量少','月经提前','月经延后','经期错乱','带下量多','带下量少','带下异味','黄带','偶尔','1天','2天','3天','4天','5天','1周','2周','3周','1个月','2个月','3个月','半年','1年'])
 
-const presentIllnessSections = [
+const presentIllnessSections = ref([
   { label: '诱因', tags: ['无明显诱因','受凉','劳累','接触感冒患者','季节变化','淋雨'] },
   { label: '特征', tags: ['高热','低热','喷嚏频繁','喷嚏阵发性','发热反复'] },
   { label: '影响', tags: ['休息后缓解','受凉后加重','夜间加重','活动后加重','多饮水后缓解'] },
   { label: '伴随', tags: ['流涕','咽痛','咳嗽','头痛','肌肉酸痛'] },
-]
+])
 
-const pastHistoryTags = ['高血压','高血脂','心脏病','糖尿病','痛风','精神疾病','脑梗死','肝炎','胃炎','肺结核','哮喘','鼻炎','甲亢','血液病']
+const pastHistoryTags = ref(['高血压','高血脂','心脏病','糖尿病','痛风','精神疾病','脑梗死','肝炎','胃炎','肺结核','哮喘','鼻炎','甲亢','血液病'])
 
-const allergyTags = ['青霉素','链霉素','卡那霉素','林可霉素','左氧氟沙星','溴芬酸钠','阿托品','头孢类','磺胺类','酒精','碘伏','去痛片','扑热息痛','安痛定','安定','鲁米那','阿司匹林','普鲁卡因','花粉','霉菌','尘螨','毛皮屑','牛奶','鸡蛋','大豆','小麦','花生','鱼虾','坚果']
+const allergyTags = ref(['青霉素','链霉素','卡那霉素','林可霉素','左氧氟沙星','溴芬酸钠','阿托品','头孢类','磺胺类','酒精','碘伏','去痛片','扑热息痛','安痛定','安定','鲁米那','阿司匹林','普鲁卡因','花粉','霉菌','尘螨','毛皮屑','牛奶','鸡蛋','大豆','小麦','花生','鱼虾','坚果'])
 
-const personalHistorySections = [
+const personalHistorySections = ref([
   { label: '吸烟/饮酒', tags: ['吸烟','偶尔吸烟','长期吸烟','不饮酒','偶尔饮酒','长期饮酒'] },
   { label: '婚育', tags: ['未婚','已婚','未孕','备孕','怀孕','闭经','有早产史','有流产史','有痛经史'] },
-]
+])
 
 const pulseDescriptionTags = ['弦细','滑数','沉迟','浮紧','细弱','洪大','濡缓','涩滞','虚浮','实有力']
 const tongueColorTags = ['淡','红','绛','紫','青']
@@ -987,9 +956,9 @@ let undoTimeout: ReturnType<typeof setTimeout> | null = null
 
 /* ============ Computed ============ */
 const selectedResult = computed(() => diagnosisResults.find(r => r.pattern === selectedPattern.value))
-const pendingCount = computed(() => prescriptions.filter(p => p.status === 'pending').length)
+const pendingCount = computed(() => prescriptions.value.filter(p => p.status === 'pending').length)
 
-const selectedPatientInfo = computed(() => emrPatientList.find(x => x.id === selectedPatientFromBar.value) || null)
+const selectedPatientInfo = computed(() => emrPatientList.value.find(x => x.id === selectedPatientFromBar.value) || null)
 
 const tongueDisplay = computed(() => {
   let val = symptoms.value.tongueColor
@@ -1057,7 +1026,7 @@ const mergedHerbs = computed<MergedHerb[]>(() => {
     }
   }
   for (const name of selectedCommonFormulaNames.value) {
-    const cf = commonFormulas.find(c => c.name === name)
+    const cf = commonFormulas.value.find(c => c.name === name)
     if (cf) {
       for (const h of cf.herbs) {
         if (!sourceMap.has(h)) sourceMap.set(h, new Set())
@@ -1097,15 +1066,24 @@ const mergedEffectsData = computed<MergedEffect[]>(() => {
 const formulaSearchResults = computed(() => {
   const combined = [
     ...prescriptionMock.formulas,
-    ...commonFormulas.map(f => ({ name: f.name, herbs: f.herbs.map(h => ({ name: h, dosage: '9g' })), effects: [] as string[], reason: '' })),
+    ...commonFormulas.value.map(f => ({ name: f.name, herbs: f.herbs.map(h => ({ name: h, dosage: '9g' })), effects: [] as string[], reason: '' })),
   ]
   return combined.filter(f => f.name.includes(formulaSearchQuery.value))
 })
 
+const treatmentToCategoryL1 = (treatment: string): string => {
+  return '经典方剂'
+}
+
+const directionCategoryL1 = computed(() => treatmentToCategoryL1(prescriptionMock.treatment))
+
 const allDirectionFormulas = computed(() => {
   const aiFormulas = prescriptionMock.formulas.map((f, i) => ({ ...f, idx: i, source: 'ai' as const }))
-  const commonFiltered = commonFormulas
+  const cat = directionCategoryL1.value
+  const commonFiltered = commonFormulas.value
     .filter(cf => !prescriptionMock.formulas.some(af => af.name === cf.name))
+    .filter(cf => !cat || cf.category === cat)
+    .slice(0, 30)
     .map((cf, i) => ({
       name: cf.name,
       herbs: cf.herbs.map(h => ({ name: h, dosage: '9g' })),
@@ -1128,7 +1106,7 @@ const rxDisplayHerbs = computed(() => {
     }
   }
   for (const name of selectedCommonFormulaNames.value) {
-    const cf = commonFormulas.find(c => c.name === name)
+    const cf = commonFormulas.value.find(c => c.name === name)
     if (cf) {
       for (const h of cf.herbs) {
         if (!rxSourceMap.has(h)) rxSourceMap.set(h, new Set())
@@ -1150,7 +1128,7 @@ const rxDisplayHerbs = computed(() => {
 
 const filteredHerbs = computed(() => {
   const t = searchHerb.value.toLowerCase()
-  return herbDatabase.filter(h => h.name.includes(t) || h.category.includes(t) || h.functions.some(f => f.includes(t)))
+  return herbDatabase.value.filter(h => h.name.includes(t) || h.category.includes(t) || h.functions.some(f => f.includes(t)))
 })
 
 /* ============ Functions ============ */
@@ -1178,7 +1156,7 @@ function appendInquiry(label: string, v: string) {
   }
 }
 
-function selectPatientFromBar(patient: typeof emrPatientList[0]) {
+function selectPatientFromBar(patient: Patient) {
   selectedPatientFromBar.value = patient.id
   form.value = { ...form.value, name: patient.name, gender: patient.gender === '男' ? 'male' : 'female', age: String(patient.age) }
 }
@@ -1188,7 +1166,7 @@ function handleSelectPattern(result: DiagnosisResult) {
   customDescription.value = result.description
   customSymptoms.value = result.symptoms.join('、')
   selectedPattern.value = result.pattern
-  const mockData = patternToDiagnosis[result.pattern]
+  const mockData = patternToDiagnosis.value[result.pattern]
   if (mockData) {
     form.value = { ...form.value, diagnosis: mockData.diagnosis, differentiation: mockData.differentiation }
   }
@@ -1266,7 +1244,7 @@ function toggleCommonFormula(name: string) {
   const allEffects: string[] = []
   const allReasons: string[] = []
   newNames.forEach(n => {
-    const cf = commonFormulas.find(c => c.name === n)
+    const cf = commonFormulas.value.find(c => c.name === n)
     if (cf) { cf.herbs.forEach(h => allHerbs.push({ name: h, dosage: '9g' })) }
   })
   customHerbs.value = allHerbs
@@ -1493,10 +1471,6 @@ function cancelReasonEdit() {
 function checkCompatibilities(herbs: SelectedHerb[]) {
   const w: string[] = []
   for (let i = 0; i < herbs.length; i++) {
-    for (let j = i + 1; j < herbs.length; j++) {
-      if (herbs[i].incompatibilities.includes(herbs[j].name)) w.push(`${herbs[i].name} 与 ${herbs[j].name} 存在配伍禁忌`)
-      if (herbs[j].incompatibilities.includes(herbs[i].name)) w.push(`${herbs[j].name} 与 ${herbs[i].name} 存在配伍禁忌`)
-    }
     if (herbs[i].currentDosage > herbs[i].maxDosage) w.push(`${herbs[i].name} 超出最大剂量（${herbs[i].maxDosage}${herbs[i].unit}）`)
   }
   compatibilityWarnings.value = w
@@ -1523,10 +1497,10 @@ function updateDosage(id: number, value: number) {
 
 function applyFormula(name: string) {
   selectedFormula.value = name
-  const formula = commonFormulas.find(f => f.name === name)
+  const formula = commonFormulas.value.find(f => f.name === name)
   if (!formula) return
   const dosages: Record<string, number> = { '柴胡': 12, '黄芩': 9, '党参': 9, '半夏': 9, '炙甘草': 6, '生姜': 9, '大枣': 12, '当归': 12, '川芎': 9, '白芍': 12, '熟地黄': 15, '桂枝': 9, '茯苓': 15, '白术': 12 }
-  const herbs = formula.herbs.map(n => { const h = herbDatabase.find(x => x.name === n); return h ? { ...h, currentDosage: dosages[n] || 9 } : null }).filter((h): h is SelectedHerb => h !== null)
+  const herbs = formula.herbs.map(n => { const h = herbDatabase.value.find(x => x.name === n); return h ? { ...h, currentDosage: dosages[n] || 9 } : null }).filter((h): h is SelectedHerb => h !== null)
   selectedHerbs.value = herbs
   checkCompatibilities(herbs)
 }
@@ -1547,7 +1521,7 @@ function handleClickOutside(e: MouseEvent) {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   const state = window.history.state as Record<string, unknown> | null
   const patient = state?.patient as { id: number; name: string; gender: string; age: number; diagnosis: string } | undefined
   if (patient) {
@@ -1561,6 +1535,52 @@ onMounted(() => {
     window.history.replaceState({}, '')
   }
   document.addEventListener('mousedown', handleClickOutside)
+
+  // Fetch data from APIs
+  try {
+    const [herbsRes, formulasRes, prescriptionsRes, patientsRes, patternsRes, symptomDictRes] = await Promise.all([
+      getHerbs(),
+      getFormulas(),
+      getPrescriptions(),
+      getPatients(),
+      getSyndromePatterns(),
+      getSymptomDict(),
+    ])
+    herbDatabase.value = ((herbsRes as any[]) || []).map(h => ({
+      id: h.id, name: h.name, category: h.category || '',
+      nature: h.nature || '', taste: h.taste || '', meridian: h.meridian || '',
+      minDosage: h.min_dosage ?? 0, maxDosage: h.max_dosage ?? 0, unit: h.unit || 'g',
+      toxic: !!h.is_toxic,
+      functions: h.functions ? [h.functions] : [],
+    }))
+    commonFormulas.value = ((formulasRes as any[]) || []).map(f => ({ name: f.name, category: f.category_l1 || '', categoryL2: f.category_l2 || '', herbs: ((f.herbs as string[]) || []) }))
+    prescriptions.value = (prescriptionsRes as Prescription[]) || []
+    emrPatientList.value = (patientsRes as Patient[]) || []
+    // Convert syndrome patterns array to record
+    const patternsArr = (patternsRes as Array<{ pattern: string; diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }>) || []
+    const record: Record<string, { diagnosis: string; differentiation: string; treatmentMethod: string; prescription: string }> = {}
+    patternsArr.forEach(p => { record[p.pattern] = { diagnosis: p.diagnosis, differentiation: p.differentiation, treatmentMethod: p.treatmentMethod, prescription: p.prescription } })
+    patternToDiagnosis.value = record
+    // Map symptom_dict data into tag picker arrays
+    const dictItems = (symptomDictRes as Array<{ category: string; sub_category: string | null; label: string }>) || []
+    const ccLabels = dictItems.filter(s => s.category === 'chief_complaint').map(s => s.label)
+    if (ccLabels.length) chiefComplaintTags.value = ccLabels
+    const piMap = new Map<string, string[]>()
+    dictItems.filter(s => s.category === 'present_illness').forEach(s => {
+      const key = s.sub_category || '其他'
+      if (!piMap.has(key)) piMap.set(key, [])
+      piMap.get(key)!.push(s.label)
+    })
+    if (piMap.size) presentIllnessSections.value = Array.from(piMap.entries()).map(([label, tags]) => ({ label, tags }))
+    const phLabels = dictItems.filter(s => s.category === 'past_history').map(s => s.label)
+    if (phLabels.length) pastHistoryTags.value = phLabels
+    const alLabels = dictItems.filter(s => s.category === 'allergy').map(s => s.label)
+    if (alLabels.length) allergyTags.value = alLabels
+    const peLabels = dictItems.filter(s => s.category === 'personal').map(s => s.label)
+    if (peLabels.length) personalHistorySections.value = [{ label: '个人习惯', tags: peLabels }]
+  } catch (_) {
+    // Keep fallback hardcoded refs on error
+  }
 })
 
 onUnmounted(() => {

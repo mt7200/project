@@ -1,6 +1,4 @@
-"""方剂-药材关联表 ORM"""
 from sqlalchemy import Column, Integer, String, ForeignKey, UniqueConstraint
-
 from core.database import Base
 
 
@@ -16,3 +14,6 @@ class FormulaHerb(Base):
     __table_args__ = (
         UniqueConstraint("formula_id", "herb_id", name="uq_formula_herb"),
     )
+    dosage = Column(String(50))
+    unit = Column(String(10), default="g")
+    usage_note = Column(String(200))

@@ -17,7 +17,7 @@ class EditableHerb(BaseModel):
     min_dosage: float
     max_dosage: float
     unit: str = "g"
-    toxic: bool = False
+    is_toxic: bool = False
 
 
 class PrescriptionCreate(BaseModel):

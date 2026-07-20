@@ -1,7 +1,6 @@
 """就诊记录表 ORM"""
-from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, Date, Text, DateTime
-
+from datetime import datetime, date
+from sqlalchemy import Column, BigInteger, Integer, String, Date, Text, DateTime, ForeignKey
 from core.database import Base
 
 

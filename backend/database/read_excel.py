@@ -1,7 +1,11 @@
 import openpyxl
 import json
 
-wb = openpyxl.load_workbook(r"c:\Users\maoto\Desktop\专业相关\大创\中医医疗页面\页面代码\project-main\1\medicine (1) (1)\medicine\medicine\标注二级分类后的方剂表.xlsx", data_only=True)
+import os
+# Excel 和脚本在同一目录
+script_dir = os.path.dirname(os.path.abspath(__file__))
+xlsx_path = os.path.join(script_dir, "标注二级分类后的方剂表.xlsx")
+wb = openpyxl.load_workbook(xlsx_path, data_only=True)
 
 for sheet_name in wb.sheetnames:
     ws = wb[sheet_name]

@@ -24,12 +24,9 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
           </div>
           <div>
-            <div class="stats-card-value">
-              665
-              <span class="stats-card-change up">↑12%</span>
-            </div>
+            <div class="stats-card-value">{{ summary.total_visits }}</div>
             <div class="stats-card-label">总诊疗人次</div>
-            <div class="stats-card-sub">较上月增加12%</div>
+            <div class="stats-card-sub">实时统计</div>
           </div>
         </div>
         <div class="stats-summary-card">
@@ -37,12 +34,9 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" /></svg>
           </div>
           <div>
-            <div class="stats-card-value">
-              580
-              <span class="stats-card-change up">↑8%</span>
-            </div>
+            <div class="stats-card-value">{{ summary.total_prescriptions }}</div>
             <div class="stats-card-label">累计处方数</div>
-            <div class="stats-card-sub">含中药处方比例92%</div>
+            <div class="stats-card-sub">含中药处方</div>
           </div>
         </div>
         <div class="stats-summary-card">
@@ -50,7 +44,7 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4" /><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" /></svg>
           </div>
           <div>
-            <div class="stats-card-value">95.8%</div>
+            <div class="stats-card-value">{{ summary.review_pass_rate }}%</div>
             <div class="stats-card-label">审方通过率</div>
             <div class="stats-card-sub">AI辅助审核覆盖100%</div>
           </div>
@@ -60,12 +54,9 @@
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18" /><polyline points="17 6 23 6 23 12" /></svg>
           </div>
           <div>
-            <div class="stats-card-value">
-              87.2%
-              <span class="stats-card-change up">↑3%</span>
-            </div>
+            <div class="stats-card-value">{{ summary.effective_rate }}%</div>
             <div class="stats-card-label">治疗有效率</div>
-            <div class="stats-card-sub">痊愈+显效+好转占比</div>
+            <div class="stats-card-sub">低风险处方占比</div>
           </div>
         </div>
       </div>
@@ -144,49 +135,62 @@
 </template>
 
 <script setup lang="ts">
-const monthlyData = [
-  { month: '1月', visits: 128, prescriptions: 110, reviewCount: 105 },
-  { month: '2月', visits: 98, prescriptions: 82, reviewCount: 80 },
-  { month: '3月', visits: 145, prescriptions: 128, reviewCount: 122 },
-  { month: '4月', visits: 156, prescriptions: 138, reviewCount: 132 },
-  { month: '5月', visits: 138, prescriptions: 122, reviewCount: 118 },
-]
+import { ref, onMounted, computed } from 'vue'
+import { getMonthlyTrend, getSyndromeDistribution, getHerbUsageRanking, getStatistics } from '@/api/statistics'
 
-const syndromeData = [
-  { name: '风寒束表', value: 28, color: '#4A90D9' },
-  { name: '肝郁气滞', value: 22, color: '#7B61FF' },
-  { name: '肾阳虚', value: 18, color: '#52C41A' },
-  { name: '风热犯肺', value: 15, color: '#FAAD14' },
-  { name: '痰湿阻肺', value: 12, color: '#FF7A45' },
-  { name: '其他证型', value: 10, color: '#C0C0C0' },
-]
+const monthlyData = ref<{ month: string; visits: number; prescriptions: number; reviewCount: number }[]>([])
+const syndromeData = ref<{ name: string; value: number; color: string }[]>([])
+const herbUsageRanking = ref<{ name: string; count: number; maxCount: number }[]>([])
+const treatmentEffectData = ref<{ month: string; 痊愈: number; 显效: number; 好转: number }[]>([])
 
-const herbUsageRanking = [
-  { name: '甘草', count: 156, maxCount: 180 },
-  { name: '茯苓', count: 142, maxCount: 180 },
-  { name: '当归', count: 128, maxCount: 180 },
-  { name: '白术', count: 115, maxCount: 180 },
-  { name: '柴胡', count: 108, maxCount: 180 },
-  { name: '白芍', count: 96, maxCount: 180 },
-  { name: '黄芪', count: 88, maxCount: 180 },
-  { name: '党参', count: 82, maxCount: 180 },
-]
+const summary = ref<{ total_visits: number; total_prescriptions: number; review_pass_rate: number; effective_rate: number }>({
+  total_visits: 0,
+  total_prescriptions: 0,
+  review_pass_rate: 0,
+  effective_rate: 0,
+})
 
-const diagnosisRanking = [
-  { name: '风寒感冒', count: 45, maxCount: 50 },
-  { name: '月经不调', count: 32, maxCount: 50 },
-  { name: '腰痛病', count: 28, maxCount: 50 },
-  { name: '咳嗽病', count: 24, maxCount: 50 },
-  { name: '不寐', count: 20, maxCount: 50 },
-]
+const SYNDROME_COLORS = ['#4A90D9', '#7B61FF', '#52C41A', '#FAAD14', '#FF7A45', '#13C2C2', '#EB2F96', '#C0C0C0']
 
-const treatmentEffectData = [
-  { month: '1月', 痊愈: 35, 显效: 42, 好转: 28 },
-  { month: '2月', 痊愈: 28, 显效: 35, 好转: 22 },
-  { month: '3月', 痊愈: 40, 显效: 48, 好转: 32 },
-  { month: '4月', 痊愈: 45, 显效: 50, 好转: 35 },
-  { month: '5月', 痊愈: 38, 显效: 44, 好转: 30 },
-]
+onMounted(async () => {
+  try {
+    const [monthly, syndrome, herbRank, summaryRes] = await Promise.all([
+      getMonthlyTrend(),
+      getSyndromeDistribution(),
+      getHerbUsageRanking(),
+      getStatistics(),
+    ])
+    monthlyData.value = ((monthly as any[]) || []).map((m) => ({
+      month: m.month,
+      visits: m.count,
+      prescriptions: 0,
+      reviewCount: 0,
+    }))
+    syndromeData.value = ((syndrome as any[]) || []).map((s, i) => ({
+      name: s.name,
+      value: s.count,
+      color: SYNDROME_COLORS[i % SYNDROME_COLORS.length],
+    }))
+    const herbArr = (herbRank as any[]) || []
+    const herbMax = herbArr.reduce((max, h) => Math.max(max, h.count || 0), 0) || 1
+    herbUsageRanking.value = herbArr.map((h) => ({ name: h.name, count: h.count, maxCount: herbMax }))
+    const s = summaryRes as any
+    if (s) {
+      summary.value = {
+        total_visits: s.total_visits ?? 0,
+        total_prescriptions: s.total_prescriptions ?? 0,
+        review_pass_rate: s.review_pass_rate ?? 0,
+        effective_rate: s.effective_rate ?? 0,
+      }
+    }
+  } catch (e) {
+    console.error('加载统计数据失败', e)
+  }
+})
+
+const diagnosisRanking = computed(() =>
+  syndromeData.value.slice(0, 5).map((d) => ({ name: d.name, count: d.value, maxCount: syndromeData.value[0]?.value || 1 }))
+)
 
 function exportCSV(data: Record<string, unknown>[], filename: string, headers: Record<string, string>) {
   const hRow = Object.values(headers).join(',')

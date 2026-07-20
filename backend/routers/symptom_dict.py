@@ -34,3 +34,10 @@ def list_categories(db: Session = Depends(get_db)):
     from sqlalchemy import distinct
     rows = db.query(distinct(SymptomDict.category)).filter(SymptomDict.category.isnot(None)).all()
     return [row[0] for row in rows]
+
+
+@router.get("/sections")
+def list_sections(db: Session = Depends(get_db)):
+    from sqlalchemy import distinct
+    rows = db.query(distinct(SymptomDict.sub_category)).filter(SymptomDict.sub_category.isnot(None)).all()
+    return [r[0] for r in rows]

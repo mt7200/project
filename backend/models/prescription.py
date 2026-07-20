@@ -1,30 +1,20 @@
-"""处方表 ORM"""
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, Text, Float, ForeignKey, JSON, Boolean
-
+from sqlalchemy import Column, Integer, String, DateTime, Text, ForeignKey
 from core.database import Base
 
 
 class Prescription(Base):
-    __tablename__ = "prescriptions"
+    __tablename__ = "prescription"
 
     id = Column(Integer, primary_key=True, index=True)
-    visit_id = Column(Integer, ForeignKey("visits.id"), nullable=False, index=True)
-    patient_id = Column(Integer, ForeignKey("patients.id"))
-    doctor_id = Column(Integer, ForeignKey("users.id"))
-    diagnosis = Column(String(255))
-    syndrome = Column(String(128))
-    herbs = Column(JSON)  # 处方明细
-    risk_level = Column(String(16), default="low")  # low / medium / high
-    risk_score = Column(Integer, default=0)
-    status = Column(String(16), default="pending")  # pending / approved / rejected
-    compatibility_risk = Column(Boolean, default=False)
-    dosage_risk = Column(Boolean, default=False)
-    contraindication_risk = Column(Boolean, default=False)
-    risks = Column(JSON)
-    suggestions = Column(JSON)
+    prescription_no = Column(String(50), unique=True)
+    patient_id = Column(Integer, ForeignKey("patient.id"), nullable=False)
+    visit_id = Column(Integer, ForeignKey("visit_record.id"))
+    doctor_id = Column(Integer, ForeignKey("sys_user.id"), nullable=False)
+    formula_id = Column(Integer, ForeignKey("formula.id"))
+    diagnosis = Column(String(200))
+    syndrome = Column(String(200))
     notes = Column(Text)
-    reviewer = Column(String(64))
+    status = Column(String(20), default="draft")
     created_at = Column(DateTime, default=datetime.utcnow)
-    reviewed_at = Column(DateTime)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

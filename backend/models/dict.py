@@ -1,7 +1,6 @@
 """字典表 ORM: 证型字典、症状字典"""
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, Text, DateTime
-
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from core.database import Base
 
 

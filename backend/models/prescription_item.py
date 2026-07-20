@@ -1,16 +1,14 @@
-"""处方药材明细表 ORM"""
-from sqlalchemy import Column, Integer, Float, String, ForeignKey
-
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
 from core.database import Base
 
 
 class PrescriptionItem(Base):
-    __tablename__ = "prescription_items"
+    __tablename__ = "prescription_item"
 
     id = Column(Integer, primary_key=True, index=True)
-    prescription_id = Column(Integer, ForeignKey("prescriptions.id"), nullable=False, index=True)
-    herb_id = Column(Integer, ForeignKey("herbs.id"), nullable=False)
-    formula_id = Column(Integer, ForeignKey("formulas.id"))
+    prescription_id = Column(Integer, ForeignKey("prescription.id"), nullable=False)
+    herb_id = Column(Integer, ForeignKey("herb.id"), nullable=False)
+    herb_name = Column(String(50), nullable=False)
     dosage = Column(Float)
-    unit = Column(String(8), default="g")
+    unit = Column(String(5), default="g")
     sort_order = Column(Integer, default=0)

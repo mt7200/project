@@ -9,8 +9,6 @@ export interface Herb {
   maxDosage: number
   unit: string
   toxic: boolean
-  incompatibilities: string[]
-  synergies: string[]
   functions: string[]
 }
 

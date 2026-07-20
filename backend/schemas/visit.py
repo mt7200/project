@@ -29,7 +29,6 @@ class VisitUpdate(BaseModel):
     tongue_image: Optional[str] = None
     pulse_image: Optional[str] = None
     other_exams: Optional[str] = None
-    status: Optional[str] = None
 
 
 class VisitOut(BaseModel):

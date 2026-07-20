@@ -439,15 +439,15 @@
         <div :style="{ marginTop: '20px' }">
           <h2 class="df-section-title">证候详情</h2>
           <div class="df-detail-grid">
-            <div class="df-detail-item"><label>证型名称</label><span>{{ selectedPattern || '肝阳上亢证' }}</span></div>
-            <div class="df-detail-item"><label>证候编码</label><span>B01.02</span></div>
-            <div class="df-detail-item"><label>病因病机</label><span>情志内伤，肝肾阴虚，水不涵木</span></div>
-            <div class="df-detail-item"><label>典型脉象</label><span>脉弦数</span></div>
-            <div class="df-detail-item"><label>典型舌象</label><span>舌红，苔黄</span></div>
+            <div class="df-detail-item"><label>证型名称</label><span>{{ currentPatternDetail?.name || selectedPattern || '—' }}</span></div>
+            <div class="df-detail-item"><label>证候编码</label><span>{{ currentPatternDetail?.code || '—' }}</span></div>
+            <div class="df-detail-item"><label>病因病机</label><span>{{ currentPatternDetail?.etiology || '—' }}</span></div>
+            <div class="df-detail-item"><label>典型脉象</label><span>{{ currentPatternDetail?.pulse || '—' }}</span></div>
+            <div class="df-detail-item"><label>典型舌象</label><span>{{ currentPatternDetail?.tongue || '—' }}</span></div>
           </div>
           <div class="df-diff-section">
             <h3>症状辨证权重</h3>
-            <div v-for="(item, index) in patternDetails['肝阳上亢']?.differentiation" :key="index" class="df-diff-item">
+            <div v-for="(item, index) in currentPatternDetail?.differentiation" :key="index" class="df-diff-item">
               <span class="df-diff-symptom">{{ item.symptom }}</span>
               <div class="df-diff-bar">
                 <div :class="['df-diff-fill', item.weight === '主要' ? 'major' : 'minor']" :style="{ width: item.weight === '主要' ? '80%' : '50%' }" />
@@ -506,7 +506,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
+import { getSyndromePatterns } from '@/api/dict'
 
 interface PatientForm {
   name: string
@@ -567,46 +568,21 @@ interface CustomDiagnosis {
   symptoms: string[]
 }
 
+interface PatternDetail {
+  name: string
+  code: string
+  etiology: string
+  pathogenesis: string
+  pulse: string
+  tongue: string
+  differentiation: { symptom: string; weight: '主要' | '次要' }[]
+}
+
 type AgentStage = 'idle' | 'input' | 'preprocess' | 'diagnosing' | 'output'
 
-const diagnosisResults: DiagnosisResult[] = [
-  {
-    pattern: '肝阳上亢',
-    confidence: 92,
-    description: '肝阳偏亢，上扰头目，导致头晕头痛；肝肾阴虚，腰膝失养，故腰膝酸软；阴虚阳亢，虚火内扰心神，故失眠多梦。',
-    symptoms: ['眩晕', '头痛', '失眠多梦', '腰膝酸软', '口苦咽干', '舌红苔黄', '脉弦数']
-  },
-  {
-    pattern: '阴虚阳亢',
-    confidence: 78,
-    description: '阴液亏虚，阳气偏亢，虚热内生，上扰清窍。',
-    symptoms: ['头晕耳鸣', '潮热盗汗', '五心烦热', '舌红少苔', '脉细数']
-  },
-  {
-    pattern: '肝郁气滞',
-    confidence: 65,
-    description: '肝气郁结，气机不畅，情志不舒。',
-    symptoms: ['胁肋胀痛', '胸闷善太息', '抑郁多疑', '脉弦']
-  }
-]
+const diagnosisResults = ref<DiagnosisResult[]>([])
 
-const patternDetails = {
-  '肝阳上亢': {
-    name: '肝阳上亢证',
-    code: 'B01.02',
-    etiology: '情志内伤，肝肾阴虚，水不涵木',
-    pathogenesis: '肝阳偏亢，上扰头目',
-    pulse: '脉弦数',
-    tongue: '舌红，苔黄',
-    differentiation: [
-      { symptom: '眩晕', weight: '主要' },
-      { symptom: '头痛', weight: '主要' },
-      { symptom: '失眠多梦', weight: '次要' },
-      { symptom: '腰膝酸软', weight: '次要' },
-      { symptom: '口苦咽干', weight: '次要' }
-    ]
-  }
-}
+const patternDetails = ref<Record<string, PatternDetail>>({})
 
 const pulseOptions = ['浮', '沉', '迟', '数', '弱', '弦', '滑', '涩', '紧', '缓', '细', '芤', '虚', '实']
 const mockKeywords = ['眩晕', '头痛', '失眠', '脉弦数', '舌红', '苔黄', '腰膝酸软', '口苦', '面色潮红']
@@ -649,7 +625,45 @@ const agentOutput = ref<DiagnosisResult[] | null>(null)
 const animatingKeywords = ref(0)
 const typingIndex = ref(0)
 
-const selectedResult = computed(() => diagnosisResults.find(r => r.pattern === selectedPattern.value))
+const selectedResult = computed(() => diagnosisResults.value.find(r => r.pattern === selectedPattern.value))
+
+const currentPatternDetail = computed(() => {
+  const key = selectedPattern.value || '肝阳上亢'
+  return patternDetails.value[key] || null
+})
+
+onMounted(async () => {
+  try {
+    const res = await getSyndromePatterns()
+    const list = (res as any[]) || []
+    const confidences = [92, 78, 65, 55, 48]
+    diagnosisResults.value = list.map((s, i) => ({
+      pattern: s.name,
+      confidence: confidences[i % confidences.length],
+      description: s.description || '',
+      symptoms: s.symptoms || [],
+    }))
+    const details: Record<string, PatternDetail> = {}
+    list.forEach((s) => {
+      const syms = s.symptoms || []
+      details[s.name] = {
+        name: s.name,
+        code: '',
+        etiology: s.description || '',
+        pathogenesis: s.treatment_principle || '',
+        pulse: '',
+        tongue: '',
+        differentiation: syms.map((sym: string, idx: number) => ({
+          symptom: sym,
+          weight: (idx < 2 ? '主要' : '次要') as '主要' | '次要',
+        })),
+      }
+    })
+    patternDetails.value = details
+  } catch (e) {
+    console.error('加载证型字典失败', e)
+  }
+})
 
 const pipelineStages = computed(() => {
   const stageOrder: AgentStage[] = ['input', 'preprocess', 'diagnosing', 'output']
@@ -782,7 +796,7 @@ watch([agentStage, typingIndex, animatingKeywords], (_a, _b, onCleanup) => {
   }
   if (stage === 'diagnosing') {
     const timer = setTimeout(() => {
-      agentOutput.value = diagnosisResults
+      agentOutput.value = diagnosisResults.value
       agentStage.value = 'output'
     }, 2000)
     onCleanup(() => clearTimeout(timer))

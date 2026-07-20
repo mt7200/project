@@ -36,6 +36,10 @@
         </div>
 
         <form @submit.prevent="handleSubmit" class="login-form">
+          <div v-if="errorMsg" class="login-error">
+            <span>⚠ {{ errorMsg }}</span>
+          </div>
+
           <div class="form-group">
             <label for="username">用户名 / 手机号</label>
             <div class="input-wrapper">
@@ -70,8 +74,8 @@
             <a href="#" class="forgot-password">忘记密码？</a>
           </div>
 
-          <button type="submit" class="login-button">
-            登 录
+          <button type="submit" class="login-button" :disabled="loading">
+            {{ loading ? '登录中...' : '登 录' }}
           </button>
         </form>
 
@@ -90,16 +94,46 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useUserStore } from '@/store/modules/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 const username = ref('')
 const password = ref('')
 const rememberMe = ref(false)
+const errorMsg = ref('')
+const loading = ref(false)
 
-const handleSubmit = () => {
-  // TODO: 接入后端登录接口 (auth_service)
-  console.log('Login:', { username: username.value, password: password.value, rememberMe: rememberMe.value })
-  router.push('/')
+const handleSubmit = async () => {
+  errorMsg.value = ''
+  if (!username.value.trim() || !password.value) {
+    errorMsg.value = '请输入用户名和密码'
+    return
+  }
+  loading.value = true
+  try {
+    await userStore.login({
+      username: username.value.trim(),
+      password: password.value,
+      rememberMe: rememberMe.value,
+    })
+    router.push('/')
+  } catch (e: any) {
+    const detail = e?.response?.data?.detail
+    if (typeof detail === 'string') {
+      errorMsg.value = detail
+    } else if (Array.isArray(detail) && detail.length > 0) {
+      errorMsg.value = detail.map((d: any) => d?.msg || '').filter(Boolean).join('；')
+    } else if (e?.response?.status === 401) {
+      errorMsg.value = '用户名或密码错误'
+    } else if (e?.message) {
+      errorMsg.value = e.message
+    } else {
+      errorMsg.value = '登录失败，请稍后重试'
+    }
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -204,6 +238,15 @@ const handleSubmit = () => {
   display: flex;
   flex-direction: column;
   gap: 24px;
+}
+
+.login-error {
+  padding: 10px 14px;
+  background: #fff1f0;
+  border: 1px solid #ffa39e;
+  border-radius: 8px;
+  color: #cf1322;
+  font-size: 13px;
 }
 
 .form-group {

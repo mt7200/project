@@ -449,6 +449,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { exportToCSV } from '@/utils/common'
+import { getEMRs, getHistoryRecords } from '@/api/emr'
+import { getPatients } from '@/api/patient'
 
 interface EMR {
   id: number
@@ -470,44 +472,7 @@ interface EMR {
   notes: string
 }
 
-const mockEMRs: EMR[] = [
-  {
-    id: 10001, name: '张三', gender: '男', age: 45,
-    visitDate: '2026-05-05', chiefComplaint: '恶寒发热2天，伴头痛鼻塞',
-    presentIllness: '患者2天前因受凉后出现恶寒、发热、头痛、鼻塞流清涕、咳嗽、痰白清稀。自服感冒药效果不佳。',
-    pastHistory: '既往体健，无药物过敏史，无慢性病史。',
-    tongueImage: '舌质淡红，苔薄白', pulseImage: '脉浮紧',
-    complexion: '面色微白', voice: '语声重浊',
-    syndrome: '风寒束表证', diagnosis: '风寒感冒',
-    treatmentPrinciple: '辛温解表，宣肺散寒',
-    prescription: '麻黄9g、桂枝6g、杏仁9g、炙甘草3g',
-    notes: '嘱服药后盖被取微汗，避风寒，忌食生冷。3剂，每日1剂，水煎服。',
-  },
-  {
-    id: 10002, name: '李四', gender: '女', age: 38,
-    visitDate: '2026-05-04', chiefComplaint: '月经不调半年，伴胸胁胀痛',
-    presentIllness: '患者近半年来月经周期紊乱，经量时多时少，经前乳房胀痛，胸胁胀满，情绪易怒，失眠多梦。',
-    pastHistory: '有轻度乳腺增生病史，无手术史。',
-    tongueImage: '舌质淡红，苔薄白', pulseImage: '脉弦细',
-    complexion: '面色微暗', voice: '语声正常',
-    syndrome: '肝郁血虚证', diagnosis: '月经不调',
-    treatmentPrinciple: '疏肝解郁，养血调经',
-    prescription: '柴胡12g、当归12g、白芍15g、茯苓15g、白术12g、薄荷6g、生姜9g、炙甘草6g',
-    notes: '嘱保持心情舒畅，避免劳累。7剂，每日1剂，水煎服。',
-  },
-  {
-    id: 10003, name: '王五', gender: '男', age: 62,
-    visitDate: '2026-05-03', chiefComplaint: '反复腰痛3年，加重1周',
-    presentIllness: '患者3年来反复出现腰痛，劳累后加重，伴下肢酸软无力，夜尿频多，畏寒肢冷。近1周症状加重。',
-    pastHistory: '有高血压病史5年，规律服用降压药，血压控制可。',
-    tongueImage: '舌质淡胖，苔白滑', pulseImage: '脉沉弱',
-    complexion: '面色㿠白', voice: '语声低微',
-    syndrome: '肾阳虚证', diagnosis: '腰痛病',
-    treatmentPrinciple: '温补肾阳，强腰壮骨',
-    prescription: '熟地黄24g、山茱萸12g、山药12g、茯苓9g、牡丹皮9g、泽泻9g、桂枝3g、附子3g',
-    notes: '嘱注意腰部保暖，避免重体力劳动。7剂，每日1剂，水煎服。',
-  },
-]
+const mockEMRs = ref<EMR[]>([])
 
 interface PatientSummary {
   id: number
@@ -519,24 +484,12 @@ interface PatientSummary {
   followUp: string
 }
 
-const mockPatientsByStatus: Record<string, PatientSummary[]> = {
-  '可复诊': [
-    { id: 1, name: '张三', gender: '男', age: 45, diagnosis: '风寒感冒', visitDate: '2026-05-05', followUp: '7日后复诊' },
-    { id: 2, name: '王五', gender: '男', age: 62, diagnosis: '腰痛病', visitDate: '2026-05-03', followUp: '7日后复诊' },
-  ],
-  '未诊断完成': [
-    { id: 3, name: '钱九', gender: '男', age: 35, diagnosis: '待查', visitDate: '2026-05-06', followUp: '' },
-    { id: 4, name: '吴十', gender: '女', age: 28, diagnosis: '待查', visitDate: '2026-05-06', followUp: '' },
-  ],
-  '已完成': [
-    { id: 5, name: '李四', gender: '女', age: 38, diagnosis: '月经不调', visitDate: '2026-05-04', followUp: '已痊愈' },
-    { id: 6, name: '赵六', gender: '女', age: 55, diagnosis: '高血压', visitDate: '2026-05-03', followUp: '已痊愈' },
-  ],
-  '待诊断': [
-    { id: 7, name: '郑十一', gender: '男', age: 50, diagnosis: '-', visitDate: '2026-05-07', followUp: '' },
-    { id: 8, name: '陈十二', gender: '女', age: 42, diagnosis: '-', visitDate: '2026-05-07', followUp: '' },
-  ],
-}
+const mockPatientsByStatus = ref<Record<string, PatientSummary[]>>({
+  '可复诊': [],
+  '未诊断完成': [],
+  '已完成': [],
+  '待诊断': [],
+})
 
 interface HistoryRecord {
   id: number
@@ -553,78 +506,7 @@ interface HistoryRecord {
   docName: string
 }
 
-const historyRecords: HistoryRecord[] = [
-  {
-    id: 20001, patientName: '张三', gender: '男', age: 45,
-    visitDate: '2026-05-05', chiefComplaint: '恶寒发热2天', diagnosis: '风寒感冒',
-    syndrome: '风寒束表证', prescription: '麻黄汤加减',
-    treatmentResult: '好转', followUp: '7日后复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20002, patientName: '张三', gender: '男', age: 45,
-    visitDate: '2026-04-20', chiefComplaint: '咳嗽3天', diagnosis: '咳嗽病',
-    syndrome: '风热犯肺证', prescription: '桑菊饮加减',
-    treatmentResult: '痊愈', followUp: '无需复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20003, patientName: '李四', gender: '女', age: 38,
-    visitDate: '2026-05-04', chiefComplaint: '月经不调半年', diagnosis: '月经不调',
-    syndrome: '肝郁血虚证', prescription: '逍遥散加减',
-    treatmentResult: '显效', followUp: '14日后复诊',
-    docName: '华佗',
-  },
-  {
-    id: 20004, patientName: '李四', gender: '女', age: 38,
-    visitDate: '2026-03-15', chiefComplaint: '头痛乏力', diagnosis: '头痛病',
-    syndrome: '气血两虚证', prescription: '八珍汤加减',
-    treatmentResult: '好转', followUp: '30日后复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20005, patientName: '王五', gender: '男', age: 62,
-    visitDate: '2026-05-03', chiefComplaint: '腰痛加重1周', diagnosis: '腰痛病',
-    syndrome: '肾阳虚证', prescription: '金匮肾气丸加减',
-    treatmentResult: '好转', followUp: '7日后复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20006, patientName: '王五', gender: '男', age: 62,
-    visitDate: '2026-03-10', chiefComplaint: '头晕1月', diagnosis: '眩晕病',
-    syndrome: '肝阳上亢证', prescription: '天麻钩藤饮加减',
-    treatmentResult: '好转', followUp: '14日后复诊',
-    docName: '华佗',
-  },
-  {
-    id: 20007, patientName: '赵六', gender: '女', age: 55,
-    visitDate: '2026-05-03', chiefComplaint: '失眠心悸', diagnosis: '不寐',
-    syndrome: '心脾两虚证', prescription: '归脾汤加减',
-    treatmentResult: '显效', followUp: '14日后复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20008, patientName: '赵六', gender: '女', age: 55,
-    visitDate: '2026-02-20', chiefComplaint: '胃脘痛', diagnosis: '胃痛病',
-    syndrome: '脾胃虚寒证', prescription: '理中汤加减',
-    treatmentResult: '痊愈', followUp: '无需复诊',
-    docName: '张仲景',
-  },
-  {
-    id: 20009, patientName: '孙七', gender: '男', age: 28,
-    visitDate: '2026-05-01', chiefComplaint: '咽喉痛3天', diagnosis: '咽喉炎',
-    syndrome: '风热侵袭证', prescription: '银翘散加减',
-    treatmentResult: '好转', followUp: '5日后复诊',
-    docName: '华佗',
-  },
-  {
-    id: 20010, patientName: '周八', gender: '女', age: 70,
-    visitDate: '2026-04-28', chiefComplaint: '关节疼痛', diagnosis: '痹证',
-    syndrome: '风寒湿痹证', prescription: '独活寄生汤加减',
-    treatmentResult: '好转', followUp: '14日后复诊',
-    docName: '张仲景',
-  },
-]
+const historyRecords = ref<HistoryRecord[]>([])
 
 const syndromeOptions = [
   '风寒束表证', '风热犯肺证', '肝郁气滞证', '肝郁血虚证',
@@ -657,7 +539,7 @@ const historyFilterResult = ref('')
 const selectedRecord = ref<HistoryRecord | null>(null)
 
 const isHistoryTab = computed(() => activeTab.value === '历史诊疗')
-const currentPatients = computed(() => !isHistoryTab.value ? (mockPatientsByStatus[activeTab.value] || []) : [])
+const currentPatients = computed(() => !isHistoryTab.value ? (mockPatientsByStatus.value[activeTab.value] || []) : [])
 
 const filteredPatients = computed(() => {
   return currentPatients.value.filter((p) => {
@@ -667,7 +549,7 @@ const filteredPatients = computed(() => {
       if (monthNum && !p.visitDate.includes(`-${monthNum}-`)) return false
     }
     if (filterSyndrome.value) {
-      const matchedNames = mockEMRs.filter((e) => e.syndrome === filterSyndrome.value).map((e) => e.name)
+      const matchedNames = mockEMRs.value.filter((e) => e.syndrome === filterSyndrome.value).map((e) => e.name)
       if (!matchedNames.includes(p.name)) return false
     }
     return true
@@ -677,11 +559,11 @@ const filteredPatients = computed(() => {
 const selectedPatient = computed(() => currentPatients.value.find((p) => p.id === selectedId.value) || null)
 
 const selectedEMR = computed(() => selectedPatient.value
-  ? mockEMRs.find((e) => e.name === selectedPatient.value!.name) || null
+  ? mockEMRs.value.find((e) => e.name === selectedPatient.value!.name) || null
   : null)
 
 const filteredHistoryRecords = computed(() => {
-  return historyRecords.filter((r) => {
+  return historyRecords.value.filter((r) => {
     if (historySearchText.value && !r.patientName.includes(historySearchText.value) && !r.diagnosis.includes(historySearchText.value)) return false
     if (historyFilterDate.value && !r.visitDate.includes(historyFilterDate.value)) return false
     if (historyFilterResult.value && r.treatmentResult !== historyFilterResult.value) return false
@@ -690,7 +572,7 @@ const filteredHistoryRecords = computed(() => {
 })
 
 const statSummary = computed(() => {
-  const results = historyRecords.map((r) => r.treatmentResult)
+  const results = historyRecords.value.map((r) => r.treatmentResult)
   return {
     total: results.length,
     cured: results.filter((r) => r === '痊愈').length,
@@ -746,7 +628,7 @@ const goToWorkspace = (patient: PatientSummary) => {
 
 const exportHistory = () => {
   const headers = { patientName: '患者姓名', gender: '性别', age: '年龄', visitDate: '就诊日期', chiefComplaint: '主诉', diagnosis: '诊断', syndrome: '证型', prescription: '处方', treatmentResult: '疗效', docName: '医师' }
-  exportToCSV(historyRecords, '历史诊疗记录', headers)
+  exportToCSV(historyRecords.value, '历史诊疗记录', headers)
 }
 
 const exportList = () => {
@@ -754,7 +636,7 @@ const exportList = () => {
   exportToCSV(filteredPatients.value, `电子病历_${activeTab.value}`, headers)
 }
 
-onMounted(() => {
+onMounted(async () => {
   const month = route.query.month as string | undefined
   const syndrome = route.query.syndrome as string | undefined
   if (month) {
@@ -764,6 +646,71 @@ onMounted(() => {
   if (syndrome) {
     activeTab.value = '已完成'
     filterSyndrome.value = syndrome
+  }
+
+  try {
+    const [emrsRes, patientsRes, historyRes] = await Promise.all([
+      getEMRs(),
+      getPatients(),
+      getHistoryRecords().catch(() => []),
+    ])
+    const patientList = ((patientsRes as any[]) || []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      gender: p.gender || '',
+      age: p.age ?? 0,
+      diagnosis: p.diagnosis || '',
+      visitDate: p.created_at ? String(p.created_at).slice(0, 10) : '',
+      followUp: '',
+    }))
+    const patientMap = new Map(patientList.map((p) => [p.id, p]))
+    mockEMRs.value = ((emrsRes as any[]) || []).map((e) => {
+      const p = patientMap.get(e.patient_id)
+      return {
+        id: e.id,
+        name: p?.name || '未知',
+        gender: p?.gender || '',
+        age: p?.age || 0,
+        visitDate: e.created_at ? String(e.created_at).slice(0, 10) : '',
+        chiefComplaint: e.chief_complaint || '',
+        presentIllness: e.present_illness || '',
+        pastHistory: '',
+        tongueImage: '',
+        pulseImage: '',
+        complexion: '',
+        voice: '',
+        syndrome: '',
+        diagnosis: e.diagnosis || '',
+        treatmentPrinciple: '',
+        prescription: e.treatment || '',
+        notes: '',
+      }
+    })
+    mockPatientsByStatus.value = {
+      '可复诊': patientList,
+      '未诊断完成': [],
+      '已完成': patientList,
+      '待诊断': [],
+    }
+    historyRecords.value = ((historyRes as any[]) || []).map((h) => {
+      const p = patientMap.get(h.patient_id)
+      return {
+        id: h.id,
+        patientName: p?.name || '未知',
+        gender: p?.gender || '',
+        age: p?.age || 0,
+        visitDate: (h.visit_date || h.created_at) ? String(h.visit_date || h.created_at).slice(0, 10) : '',
+        chiefComplaint: '',
+        diagnosis: h.diagnosis || '',
+        syndrome: h.syndrome || '',
+        prescription: h.prescription || '',
+        treatmentResult: '好转',
+        followUp: '',
+        docName: h.doctor || '',
+      }
+    })
+  } catch (e) {
+    console.error('加载病历数据失败', e)
   }
 })
 </script>

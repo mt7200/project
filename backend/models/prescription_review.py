@@ -1,7 +1,5 @@
-"""处方审核记录表 ORM"""
 from datetime import datetime
-from sqlalchemy import Column, BigInteger, String, Integer, Text, DateTime
-
+from sqlalchemy import Column, BigInteger, String, Integer, Text, DateTime, ForeignKey
 from core.database import Base
 
 

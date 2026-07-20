@@ -47,3 +47,6 @@ def get_syndrome_pattern(
     if not pattern:
         raise HTTPException(status_code=404, detail="证型不存在")
     return pattern
+
+
+
