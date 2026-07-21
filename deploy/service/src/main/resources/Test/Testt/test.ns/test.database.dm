@@ -2,7 +2,114 @@
 <sqlMap namespace="test">
     <database id="test" description="" >
         <![CDATA[
-            ## 数据映射文件(database)，创建于2026/7/20 14:59:50
+            <?xml version="1.0" encoding="UTF-8"?>
+            <sqlMap namespace="test">
+                <!-- ============================================================ -->
+                <!-- 数据库连接测试 - 健康检查                                     -->
+                <!-- ============================================================ -->
+                <database id="ping" description="数据库连接测试">
+                    <![CDATA[
+                        SELECT 1 AS ping
+                    ]]>
+                </database>
+                <database id="dbInfo" description="获取数据库版本信息">
+                    <![CDATA[
+                        SELECT VERSION() AS db_version, DATABASE() AS db_name, NOW() AS server_time
+                    ]]>
+                </database>
+            
+                <!-- ============================================================ -->
+                <!-- 各表数据量概览                                                -->
+                <!-- ============================================================ -->
+                <database id="tableStats" description="系统表数据量统计">
+                    <![CDATA[
+                        SELECT 'sys_user' AS table_name, COUNT(*) AS row_count FROM sys_user
+                        UNION ALL
+                        SELECT 'patient', COUNT(*) FROM patient
+                        UNION ALL
+                        SELECT 'visit_record', COUNT(*) FROM visit_record
+                        UNION ALL
+                        SELECT 'diagnosis_result', COUNT(*) FROM diagnosis_result
+                        UNION ALL
+                        SELECT 'herb', COUNT(*) FROM herb
+                        UNION ALL
+                        SELECT 'herb_incompatibility', COUNT(*) FROM herb_incompatibility
+                        UNION ALL
+                        SELECT 'formula', COUNT(*) FROM formula
+                        UNION ALL
+                        SELECT 'formula_herb', COUNT(*) FROM formula_herb
+                        UNION ALL
+                        SELECT 'prescription', COUNT(*) FROM prescription
+                        UNION ALL
+                        SELECT 'prescription_item', COUNT(*) FROM prescription_item
+                        UNION ALL
+                        SELECT 'prescription_review', COUNT(*) FROM prescription_review
+                        UNION ALL
+                        SELECT 'emr', COUNT(*) FROM emr
+                        UNION ALL
+                        SELECT 'syndrome_pattern', COUNT(*) FROM syndrome_pattern
+                        UNION ALL
+                        SELECT 'symptom_dict', COUNT(*) FROM symptom_dict
+                        ORDER BY table_name ASC
+                    ]]>
+                </database>
+            
+                <!-- ============================================================ -->
+                <!-- 跨表综合搜索                                                  -->
+                <!-- ============================================================ -->
+                <database id="search" description="综合搜索：根据关键词搜索患者、处方">
+                    <![CDATA[
+                        SELECT 'patient' AS source, id, name AS display_name, phone AS extra_info
+                        FROM patient
+                        WHERE 1=1
+                        <if test="keyword != null and keyword != ''">
+                            AND (name LIKE CONCAT('%', #{keyword}, '%') OR phone LIKE CONCAT('%', #{keyword}, '%') OR id_card LIKE CONCAT('%', #{keyword}, '%'))
+                        </if>
+                        UNION ALL
+                        SELECT 'prescription' AS source, p.id, CONCAT('处方#', p.prescription_no) AS display_name, p.diagnosis AS extra_info
+                        FROM prescription p
+                        WHERE 1=1
+                        <if test="keyword != null and keyword != ''">
+                            AND (p.prescription_no LIKE CONCAT('%', #{keyword}, '%') OR p.diagnosis LIKE CONCAT('%', #{keyword}, '%') OR p.syndrome LIKE CONCAT('%', #{keyword}, '%'))
+                        </if>
+                        ORDER BY source, id
+                        LIMIT #{offset}, #{pageSize}
+                    ]]>
+                </database>
+            
+                <!-- ============================================================ -->
+                <!-- 今日业务数据概览                                              -->
+                <!-- ============================================================ -->
+                <database id="todayStats" description="今日业务统计">
+                    <![CDATA[
+                        SELECT
+                            (SELECT COUNT(*) FROM visit_record WHERE DATE(created_at) = CURDATE()) AS today_visits,
+                            (SELECT COUNT(*) FROM prescription WHERE DATE(created_at) = CURDATE()) AS today_prescriptions,
+                            (SELECT COUNT(*) FROM emr WHERE DATE(created_at) = CURDATE()) AS today_emrs,
+                            (SELECT COUNT(*) FROM prescription_review WHERE DATE(created_at) = CURDATE()) AS today_reviews
+                    ]]>
+                </database>
+            
+                <!-- ============================================================ -->
+                <!-- 数据完整性检查                                                -->
+                <!-- ============================================================ -->
+                <database id="orphanPrescription" description="检查处方中引用的患者是否存在">
+                    <![CDATA[
+                        SELECT p.id AS prescription_id, p.prescription_no, p.patient_id
+                        FROM prescription p
+                        LEFT JOIN patient pat ON p.patient_id = pat.id
+                        WHERE pat.id IS NULL
+                    ]]>
+                </database>
+                <database id="orphanItem" description="检查处方明细中引用的药材是否存在">
+                    <![CDATA[
+                        SELECT pi.id AS item_id, pi.prescription_id, pi.herb_id
+                        FROM prescription_item pi
+                        LEFT JOIN herb h ON pi.herb_id = h.id
+                        WHERE h.id IS NULL
+                    ]]>
+                </database>
+            </sqlMap>
             
         ]]>
     </database>
