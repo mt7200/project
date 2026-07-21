@@ -2,153 +2,171 @@
 <sqlMap namespace="prescription">
     <database id="prescription" description="" >
         <![CDATA[
-            ## 数据映射文件(database)，创建于2026/7/20 15:35:00
+            <?xml version="1.0" encoding="UTF-8"?>
+            <sqlMap namespace="prescription">
+                <!-- ============================================================ -->
+                <!-- 处方表 - prescription                                         -->
+                <!-- ============================================================ -->
+                <database id="list" description="查询处方列表（分页）">
+                    <![CDATA[
+                        SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
+                               pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
+                        FROM prescription p
+                        LEFT JOIN patient pat ON p.patient_id = pat.id
+                        LEFT JOIN sys_user u ON p.doctor_id = u.id
+                        LEFT JOIN formula f ON p.formula_id = f.id
+                        WHERE 1=1
+                        <if test="prescriptionNo != null and prescriptionNo != ''">
+                            AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
+                        </if>
+                        <if test="patientId != null">
+                            AND p.patient_id = #{patientId}
+                        </if>
+                        <if test="doctorId != null">
+                            AND p.doctor_id = #{doctorId}
+                        </if>
+                        <if test="status != null and status != ''">
+                            AND p.status = #{status}
+                        </if>
+                        ORDER BY p.created_at DESC
+                        LIMIT #{offset}, #{pageSize}
+                    ]]>
+                </database>
+                <database id="count" description="查询处方总数">
+                    <![CDATA[
+                        SELECT COUNT(*)
+                        FROM prescription p
+                        WHERE 1=1
+                        <if test="prescriptionNo != null and prescriptionNo != ''">
+                            AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
+                        </if>
+                        <if test="patientId != null">
+                            AND p.patient_id = #{patientId}
+                        </if>
+                        <if test="doctorId != null">
+                            AND p.doctor_id = #{doctorId}
+                        </if>
+                        <if test="status != null and status != ''">
+                            AND p.status = #{status}
+                        </if>
+                    ]]>
+                </database>
+                <database id="detail" description="根据ID查询处方详情">
+                    <![CDATA[
+                        SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
+                               pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
+                        FROM prescription p
+                        LEFT JOIN patient pat ON p.patient_id = pat.id
+                        LEFT JOIN sys_user u ON p.doctor_id = u.id
+                        LEFT JOIN formula f ON p.formula_id = f.id
+                        WHERE p.id = #{id}
+                    ]]>
+                </database>
+                <database id="insert" description="新增处方">
+                    <![CDATA[
+                        INSERT INTO prescription (prescription_no, patient_id, visit_id, doctor_id, formula_id, diagnosis, syndrome, notes, status)
+                        VALUES (#{prescriptionNo}, #{patientId}, #{visitId}, #{doctorId}, #{formulaId}, #{diagnosis}, #{syndrome}, #{notes}, #{status})
+                    ]]>
+                </database>
+                <database id="update" description="修改处方信息">
+                    <![CDATA[
+                        UPDATE prescription
+                        SET prescription_no = #{prescriptionNo},
+                            formula_id = #{formulaId},
+                            diagnosis = #{diagnosis},
+                            syndrome = #{syndrome},
+                            notes = #{notes},
+                            status = #{status}
+                        WHERE id = #{id}
+                    ]]>
+                </database>
+                <database id="delete" description="删除处方">
+                    <![CDATA[
+                        DELETE FROM prescription WHERE id = #{id}
+                    ]]>
+                </database>
             
-            -- ============================================================
-            -- 处方表 - prescription
-            -- ============================================================
+                <!-- ============================================================ -->
+                <!-- 处方明细表 - prescription_item                                -->
+                <!-- ============================================================ -->
+                <database id="itemList" description="查询处方明细列表">
+                    <![CDATA[
+                        SELECT pi.id, pi.prescription_id, pi.herb_id, pi.quantity, pi.dosage, pi.unit, pi.usage_method, pi.remark,
+                               h.name AS herb_name, h.category, h.nature
+                        FROM prescription_item pi
+                        LEFT JOIN herb h ON pi.herb_id = h.id
+                        WHERE pi.prescription_id = #{prescriptionId}
+                        ORDER BY pi.id ASC
+                    ]]>
+                </database>
+                <database id="itemInsert" description="新增处方明细">
+                    <![CDATA[
+                        INSERT INTO prescription_item (prescription_id, herb_id, quantity, dosage, unit, usage_method, remark)
+                        VALUES (#{prescriptionId}, #{herbId}, #{quantity}, #{dosage}, #{unit}, #{usageMethod}, #{remark})
+                    ]]>
+                </database>
+                <database id="itemUpdate" description="修改处方明细">
+                    <![CDATA[
+                        UPDATE prescription_item
+                        SET quantity = #{quantity},
+                            dosage = #{dosage},
+                            unit = #{unit},
+                            usage_method = #{usageMethod},
+                            remark = #{remark}
+                        WHERE id = #{id}
+                    ]]>
+                </database>
+                <database id="itemDelete" description="删除处方明细">
+                    <![CDATA[
+                        DELETE FROM prescription_item WHERE id = #{id}
+                    ]]>
+                </database>
+                <database id="itemBatchDelete" description="批量删除处方明细">
+                    <![CDATA[
+                        DELETE FROM prescription_item WHERE prescription_id = #{prescriptionId}
+                    ]]>
+                </database>
             
-            -- 查询处方列表（分页）
-            SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
-                   pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
-            FROM prescription p
-            LEFT JOIN patient pat ON p.patient_id = pat.id
-            LEFT JOIN sys_user u ON p.doctor_id = u.id
-            LEFT JOIN formula f ON p.formula_id = f.id
-            WHERE 1=1
-            <if test="prescriptionNo != null and prescriptionNo != ''">
-                AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
-            </if>
-            <if test="patientId != null">
-                AND p.patient_id = #{patientId}
-            </if>
-            <if test="doctorId != null">
-                AND p.doctor_id = #{doctorId}
-            </if>
-            <if test="status != null and status != ''">
-                AND p.status = #{status}
-            </if>
-            ORDER BY p.created_at DESC
-            LIMIT #{offset}, #{pageSize}
-            
-            -- 查询处方总数
-            SELECT COUNT(*)
-            FROM prescription p
-            WHERE 1=1
-            <if test="prescriptionNo != null and prescriptionNo != ''">
-                AND p.prescription_no LIKE CONCAT('%', #{prescriptionNo}, '%')
-            </if>
-            <if test="patientId != null">
-                AND p.patient_id = #{patientId}
-            </if>
-            <if test="doctorId != null">
-                AND p.doctor_id = #{doctorId}
-            </if>
-            <if test="status != null and status != ''">
-                AND p.status = #{status}
-            </if>
-            
-            -- 根据ID查询处方详情
-            SELECT p.id, p.prescription_no, p.patient_id, p.visit_id, p.doctor_id, p.formula_id, p.diagnosis, p.syndrome, p.notes, p.status, p.created_at, p.updated_at,
-                   pat.name AS patient_name, u.real_name AS doctor_name, f.name AS formula_name
-            FROM prescription p
-            LEFT JOIN patient pat ON p.patient_id = pat.id
-            LEFT JOIN sys_user u ON p.doctor_id = u.id
-            LEFT JOIN formula f ON p.formula_id = f.id
-            WHERE p.id = #{id}
-            
-            -- 新增处方
-            INSERT INTO prescription (prescription_no, patient_id, visit_id, doctor_id, formula_id, diagnosis, syndrome, notes, status)
-            VALUES (#{prescriptionNo}, #{patientId}, #{visitId}, #{doctorId}, #{formulaId}, #{diagnosis}, #{syndrome}, #{notes}, #{status})
-            
-            -- 修改处方信息
-            UPDATE prescription
-            SET prescription_no = #{prescriptionNo},
-                formula_id = #{formulaId},
-                diagnosis = #{diagnosis},
-                syndrome = #{syndrome},
-                notes = #{notes},
-                status = #{status}
-            WHERE id = #{id}
-            
-            -- 删除处方
-            DELETE FROM prescription WHERE id = #{id}
-            
-            -- ============================================================
-            -- 处方药材明细表 - prescription_item
-            -- ============================================================
-            
-            -- 查询处方药材明细
-            SELECT pi.id, pi.prescription_id, pi.herb_id, pi.herb_name, pi.dosage, pi.unit, pi.sort_order,
-                   h.category, h.nature, h.taste, h.meridian
-            FROM prescription_item pi
-            LEFT JOIN herb h ON pi.herb_id = h.id
-            WHERE pi.prescription_id = #{prescriptionId}
-            ORDER BY pi.sort_order ASC
-            
-            -- 新增处方药材明细
-            INSERT INTO prescription_item (prescription_id, herb_id, herb_name, dosage, unit, sort_order)
-            VALUES (#{prescriptionId}, #{herbId}, #{herbName}, #{dosage}, #{unit}, #{sortOrder})
-            
-            -- 修改处方药材明细
-            UPDATE prescription_item
-            SET herb_id = #{herbId},
-                herb_name = #{herbName},
-                dosage = #{dosage},
-                unit = #{unit},
-                sort_order = #{sortOrder}
-            WHERE id = #{id}
-            
-            -- 删除处方药材明细
-            DELETE FROM prescription_item WHERE id = #{id}
-            
-            -- 批量删除处方药材明细
-            DELETE FROM prescription_item WHERE prescription_id = #{prescriptionId}
-            
-            -- ============================================================
-            -- 处方审核记录表 - prescription_review
-            -- ============================================================
-            
-            -- 查询处方审核列表（分页）
-            SELECT pr.id, pr.prescription_id, pr.reviewer_id, pr.review_status, pr.review_comment, pr.risk_score, pr.incompatibility_found, pr.dosage_warnings, pr.reviewed_at, pr.created_at, pr.updated_at,
-                   p.prescription_no, u.real_name AS reviewer_name
-            FROM prescription_review pr
-            LEFT JOIN prescription p ON pr.prescription_id = p.id
-            LEFT JOIN sys_user u ON pr.reviewer_id = u.id
-            WHERE 1=1
-            <if test="prescriptionId != null">
-                AND pr.prescription_id = #{prescriptionId}
-            </if>
-            <if test="reviewStatus != null and reviewStatus != ''">
-                AND pr.review_status = #{reviewStatus}
-            </if>
-            ORDER BY pr.created_at DESC
-            LIMIT #{offset}, #{pageSize}
-            
-            -- 查询处方审核总数
-            SELECT COUNT(*)
-            FROM prescription_review pr
-            WHERE 1=1
-            <if test="prescriptionId != null">
-                AND pr.prescription_id = #{prescriptionId}
-            </if>
-            <if test="reviewStatus != null and reviewStatus != ''">
-                AND pr.review_status = #{reviewStatus}
-            </if>
-            
-            -- 新增处方审核记录
-            INSERT INTO prescription_review (prescription_id, reviewer_id, review_status, review_comment, risk_score, incompatibility_found, dosage_warnings, reviewed_at)
-            VALUES (#{prescriptionId}, #{reviewerId}, #{reviewStatus}, #{reviewComment}, #{riskScore}, #{incompatibilityFound}, #{dosageWarnings}, #{reviewedAt})
-            
-            -- 修改处方审核记录
-            UPDATE prescription_review
-            SET review_status = #{reviewStatus},
-                review_comment = #{reviewComment},
-                risk_score = #{riskScore},
-                incompatibility_found = #{incompatibilityFound},
-                dosage_warnings = #{dosageWarnings},
-                reviewed_at = #{reviewedAt}
-            WHERE id = #{id}
+                <!-- ============================================================ -->
+                <!-- 处方审核表 - prescription_review                              -->
+                <!-- ============================================================ -->
+                <database id="reviewList" description="查询处方审核列表">
+                    <![CDATA[
+                        SELECT pr.id, pr.prescription_id, pr.reviewer_id, pr.review_date, pr.review_result, pr.review_opinion, pr.remark, pr.created_at,
+                               p.prescription_no, u.real_name AS reviewer_name
+                        FROM prescription_review pr
+                        LEFT JOIN prescription p ON pr.prescription_id = p.id
+                        LEFT JOIN sys_user u ON pr.reviewer_id = u.id
+                        WHERE 1=1
+                        <if test="prescriptionId != null">
+                            AND pr.prescription_id = #{prescriptionId}
+                        </if>
+                        <if test="reviewerId != null">
+                            AND pr.reviewer_id = #{reviewerId}
+                        </if>
+                        <if test="reviewResult != null and reviewResult != ''">
+                            AND pr.review_result = #{reviewResult}
+                        </if>
+                        ORDER BY pr.review_date DESC
+                        LIMIT #{offset}, #{pageSize}
+                    ]]>
+                </database>
+                <database id="reviewInsert" description="新增处方审核记录">
+                    <![CDATA[
+                        INSERT INTO prescription_review (prescription_id, reviewer_id, review_date, review_result, review_opinion, remark)
+                        VALUES (#{prescriptionId}, #{reviewerId}, #{reviewDate}, #{reviewResult}, #{reviewOpinion}, #{remark})
+                    ]]>
+                </database>
+                <database id="reviewUpdate" description="修改处方审核记录">
+                    <![CDATA[
+                        UPDATE prescription_review
+                        SET review_result = #{reviewResult},
+                            review_opinion = #{reviewOpinion},
+                            remark = #{remark}
+                        WHERE id = #{id}
+                    ]]>
+                </database>
+            </sqlMap>
             
         ]]>
     </database>
